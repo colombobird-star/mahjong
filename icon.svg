@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#123330"/>
+  <g>
+    <rect x="164" y="122" width="184" height="256" rx="18" fill="#F2EDE0"/>
+    <path d="M164 336h184v24a18 18 0 0 1-18 18H182a18 18 0 0 1-18-18z" fill="#D6CCB4"/>
+    <text x="256" y="256" text-anchor="middle"
+          font-family="Hiragino Mincho ProN, Yu Mincho, Noto Serif JP, serif"
+          font-size="140" font-weight="700" fill="#C4342B">5</text>
+    <text x="256" y="330" text-anchor="middle"
+          font-family="Hiragino Mincho ProN, Yu Mincho, Noto Serif JP, serif"
+          font-size="72" font-weight="600" fill="#C4342B">萬</text>
+  </g>
+</svg>

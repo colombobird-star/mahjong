@@ -1,0 +1,26 @@
+{
+  "name": "麻雀 実力診断＋強化ドリル",
+  "short_name": "麻雀ドリル",
+  "description": "赤ドラありルール前提の麻雀25問診断と、弱点別の4週間トレーニング。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#123330",
+  "theme_color": "#123330",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

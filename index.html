@@ -152,6 +152,7 @@
     <h1>麻雀 実力診断＋強化ドリル</h1>
     <p class="lede">四人麻雀・半荘・<b>赤ドラあり（赤5×3枚）</b>・食いタンあり前提。<span id="qcount"></span>問で現在地を測り、弱いところだけを4週間で潰します。</p>
   </header>
+  <a href="./game.html" style="display:block;margin-bottom:14px;padding:11px;border-radius:4px;background:#C4342B;color:#F2EDE0;text-align:center;text-decoration:none;font-size:14px;font-weight:600">CPUと対局する（コーチ付き）</a>
   <nav id="nav"></nav>
   <main id="app"></main>
 </div>
@@ -887,13 +888,30 @@ function planFacts(c){
   return {pairs:pairs,yaoKinds:yaoKinds,honorPairs:honorPairs,ponnable:ponnable,suitCnt:suitCnt,
           std:stdS,chi:chiS,toi:toiS,kok:kokS,hon:honS,bestSuit:bestSuit};
 }
-function planAnswer(f){
-  if(f.kok<=f.std-1 && f.yaoKinds>=11) return "国士無双";
-  if(f.chi<=f.std-1 && f.pairs>=4) return "七対子";
-  if(f.toi<=f.std && f.pairs>=4 && f.ponnable>=3) return "トイトイ";
-  if(f.hon[f.bestSuit]<=f.std && f.suitCnt[f.bestSuit]>=10) return "混一色（"+SUITNM[f.bestSuit]+"）";
-  if(f.std<=f.chi-1 && f.std<=f.kok-2 && f.hon[f.bestSuit]>=f.std+1) return "面子手";
-  return null;
+function planEval(f){
+  const hon=f.hon[f.bestSuit], sc=f.suitCnt[f.bestSuit], sn="混一色（"+SUITNM[f.bestSuit]+"）";
+  const rows=[
+    {n:"面子手",  s:f.std, ok:true, pri:1, ng:""},
+    {n:"七対子",  s:f.chi, pri:2,
+      ng: f.pairs<4 ? "対子"+f.pairs+"個で4個に届かない"
+        : f.chi>f.std-1 ? "面子手より近くない" : ""},
+    {n:"トイトイ", s:f.toi, pri:3,
+      ng: f.pairs<4 ? "対子"+f.pairs+"個で4個に届かない"
+        : f.ponnable<3 ? "鳴ける対子が"+f.ponnable+"個しかない"
+        : f.toi>f.std ? "面子手よりシャンテンが落ちる" : ""},
+    {n:sn,        s:hon,   pri:4,
+      ng: sc<10 ? SUITNM[f.bestSuit]+"＋字牌が"+sc+"枚で10枚に届かない"
+        : hon>f.std ? "面子手よりシャンテンが落ちる" : ""},
+    {n:"国士無双", s:f.kok, pri:5,
+      ng: f.yaoKinds<10 ? "幺九牌が"+f.yaoKinds+"種で10種に届かない"
+        : f.kok>f.std-1 ? "面子手より近くない" : ""}
+  ];
+  rows.forEach(r=>{ if(r.ok===undefined) r.ok = !r.ng; });
+  const cand=rows.filter(r=>r.ok).slice().sort((x,y)=>x.s-y.s||y.pri-x.pri);
+  const top=cand[0];
+  if(cand.length>1 && cand[1].s===top.s && top.n!=="面子手" && cand[1].n!=="面子手") return null;
+  if(top.s>6) return null;
+  return {ans:top.n, rows:rows, suitName:sn};
 }
 function genPlan(){
   for(let tr=0;tr<600;tr++){
@@ -907,27 +925,24 @@ function genPlan(){
       for(let t=0;t<200&&n<11;t++){ const i=YAO[R(13)]; if(c[i]<(R(4)?1:2)){ c[i]++; n++; } } }
     for(let t=0;t<300&&n<13;t++){ const i=R(34); if(c[i]<4){ c[i]++; n++; } }
     if(n!==13) continue;
-    const f=planFacts(c), ans=planAnswer(f);
-    if(!ans) continue;
-    const all=["面子手","七対子","トイトイ","混一色（"+SUITNM[f.bestSuit]+"）","国士無双"];
+    const f=planFacts(c), ev=planEval(f);
+    if(!ev) continue;
+    const ans=ev.ans;
+    const all=["面子手","七対子","トイトイ",ev.suitName,"国士無双"];
     const wrong=all.filter(x=>x!==ans);
     for(let i=wrong.length-1;i>0;i--){ const j=R(i+1); const t=wrong[i]; wrong[i]=wrong[j]; wrong[j]=t; }
     const four=[ans].concat(wrong.slice(0,3));
     for(let i=four.length-1;i>0;i--){ const j=R(i+1); const t=four[i]; four[i]=four[j]; four[j]=t; }
-    const rows=[
-      ["面子手（普通に進める）",f.std],["七対子",f.chi],["トイトイ",f.toi],
-      ["混一色（"+SUITNM[f.bestSuit]+"）",f.hon[f.bestSuit]],["国士無双",f.kok]
-    ];
-    const mn=Math.min(f.std,f.chi,f.toi,f.kok);
+
     return { kind:"plan", hand:toTiles(c), handLabel:"配牌〜序盤の13枚",
       q:"この手はどこを目指す？",
       choices:four, answer:four.indexOf(ans),
       why:"<b>各ルートのシャンテン数</b><br>"+
-        rows.map(r=>r[0]+"：<b>"+r[1]+"</b>"+(r[1]===mn?"　←最短":"")).join("<br>")+
+        ev.rows.map(r=>(r.n===ans?"<b>":"")+r.n+"：<b>"+r.s+"</b>"+(r.n===ans?"　←これ</b>":
+          (r.ok?"":"　<span style=\"color:#8A968F\">候補外／"+r.ng+"</span>"))).join("<br>")+
         "<br><br><b>手牌の特徴</b><br>対子"+f.pairs+"個（うち字牌"+f.honorPairs+"）／幺九牌"+f.yaoKinds+"種／"+
         SUITNM[f.bestSuit]+"＋字牌"+f.suitCnt[f.bestSuit]+"枚／鳴ける対子"+f.ponnable+"個<br><br>"+
-        "判定基準：国士は幺九11種以上かつ最短、七対子とトイトイは対子4つ以上かつ面子手より1つ以上近いとき、"+
-        "混一は同色＋字牌10枚以上でシャンテンが落ちないとき、それ以外は面子手。" };
+        "判定：各ルートの成立条件（国士＝幺九10種以上／七対子・トイトイ＝対子4つ以上／混一＝同色＋字牌10枚以上、いずれも面子手よりシャンテンが落ちないこと）を満たすものだけを候補にし、その中でシャンテン数が最も小さいものを選ぶ。同数で並んだら打点の高いほう（国士＞混一＞トイトイ＞七対子＞面子手）。トイトイと混一は面子手の一部なので面子手より近くなることはなく、同数なら乗るのが得。" };
   }
   return null;
 }

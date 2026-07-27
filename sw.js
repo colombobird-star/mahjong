@@ -1,8 +1,8 @@
 /* 麻雀ドリル — オフライン用サービスワーカー
    ファイルを更新したら CACHE の v1 を v2, v3 … と上げてください。
    そうしないと端末に残った古い版が表示され続けます。 */
-const CACHE = "mahjong-drill-v8";
-const ASSETS = ["./", "./index.html", "./manifest.json", "./icon.svg"];
+const CACHE = "mahjong-drill-v10";
+const ASSETS = ["./", "./index.html", "./game.html", "./manifest.json", "./icon.svg"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(

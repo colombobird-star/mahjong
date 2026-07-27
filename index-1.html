@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#123330">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="麻雀ドリル">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link rel="apple-touch-icon" href="./icon.svg">
+<title>麻雀 実力診断＋強化ドリル</title>
+<style>
+  :root{
+    --felt:#123330; --feltDeep:#0C2523; --feltLine:#1D4A44;
+    --ivory:#F2EDE0; --ivoryEdge:#D6CCB4; --ink:#1A2422; --inkSoft:#5A6B66;
+    --vermilion:#C4342B; --brass:#B08D3F; --jade:#2F8F6D; --blue:#2B5F8C; --green:#2E7D4F;
+    --sans:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",system-ui,sans-serif;
+    --serif:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;
+    --mono:"SFMono-Regular",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--felt); color:var(--ivory); font-family:var(--sans);
+    font-size:15px; line-height:1.7; -webkit-text-size-adjust:100%;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:680px;margin:0 auto;padding:22px 16px 64px}
+  .eyebrow{color:var(--brass);font-size:11px;letter-spacing:.18em;font-weight:600}
+  h1{font-family:var(--serif);font-size:29px;letter-spacing:.04em;line-height:1.25;margin:4px 0 0;font-weight:600}
+  .lede{color:#9DB5AF;font-size:13.5px;margin:8px 0 0}
+  .lede b{color:var(--vermilion);font-weight:600}
+
+  nav{display:flex;flex-wrap:wrap;gap:5px;margin:20px 0}
+  nav button{
+    font-family:inherit;font-size:13.5px;padding:6px 12px;border-radius:3px;
+    background:transparent;color:#9DB5AF;border:1px solid var(--feltLine);cursor:pointer
+  }
+  nav button.on{background:var(--ivory);color:var(--ink);border-color:var(--ivory);font-weight:600}
+  nav button:focus-visible,.card button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+  .card{background:var(--ivory);color:var(--ink);border-radius:6px;padding:16px;margin-bottom:16px}
+  .card.tight{padding:12px}
+  .note{
+    background:var(--feltDeep);color:#BFD3CD;border:1px solid var(--feltLine);
+    border-radius:3px;padding:12px;font-size:13.5px;margin-bottom:16px
+  }
+  .note .k{color:var(--brass)}
+  .sub{color:var(--inkSoft);font-size:12px}
+
+  /* tiles */
+  .hand{display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px 12px;
+        background:#E5DDCA;border-radius:3px;padding:12px;margin:12px 0 16px}
+  .lbl{font-size:10.5px;color:#8A7B5C;letter-spacing:.12em;margin-bottom:6px}
+  .river{background:#E5DDCA;border-radius:3px;padding:11px;margin:12px 0 10px}
+  .rrow{display:flex;flex-wrap:wrap;gap:2px}
+  .rot{width:42px;height:40px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .rot .tile{transform:rotate(90deg)}
+  .rnote{font-size:11px;color:#8A7B5C;margin-top:7px}
+  .grp{display:flex;gap:1px}
+  .tile{width:28px;height:40px;border-radius:2px;background:var(--ivory);
+        border-bottom:3px solid var(--ivoryEdge);box-shadow:0 1px 2px rgba(0,0,0,.35);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;flex:0 0 auto}
+  .tile .n{font-size:15px;font-weight:700}
+  .tile .s{font-size:9px;font-weight:500;margin-top:1px}
+  .tile .z{font-size:17px;font-weight:700}
+  .tile.red{background:#FBEDE7;border-bottom-color:#E0B3A8}
+  .m{color:#8C2F2A}.p{color:var(--blue)}.s3{color:var(--green)}.z{color:var(--ink)}
+  .redc{color:var(--vermilion)}
+
+  /* choices */
+  .q{font-weight:600;margin:0 0 12px;line-height:1.65}
+  .choices{display:flex;flex-direction:column;gap:8px}
+  .choices button{
+    font-family:inherit;font-size:14px;text-align:left;padding:10px 12px;border-radius:3px;
+    background:#fff;border:1px solid var(--ivoryEdge);color:var(--ink);cursor:pointer;line-height:1.55
+  }
+  .choices button .idx{font-family:var(--mono);color:var(--brass);margin-right:8px}
+  .choices button.right{background:#E4F1EA;border-color:var(--jade)}
+  .choices button.wrong{background:#F7E3E1;border-color:var(--vermilion)}
+  .choices button.mute{color:#8A968F}
+  .verdict{border-top:1px solid var(--ivoryEdge);margin-top:16px;padding-top:12px}
+  .verdict .head{font-weight:700;font-size:14px;margin-bottom:4px}
+  .verdict p{margin:0;font-size:14px;color:#33403C;line-height:1.75}
+  .next{width:100%;margin-top:12px;padding:11px;border-radius:3px;border:0;
+        background:var(--ink);color:var(--ivory);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer}
+  .ghost{width:100%;margin-top:16px;padding:11px;border-radius:3px;background:transparent;
+         border:1px solid var(--ivoryEdge);color:var(--ink);font-family:inherit;font-size:14px;cursor:pointer}
+
+  .progress{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+  .progress .rule{flex:1;height:1px;background:var(--feltLine)}
+  .progress .cnt{font-family:var(--mono);font-size:12px;color:var(--brass)}
+
+  .score{display:flex;align-items:flex-end;gap:10px;margin-top:8px}
+  .score .big{font-family:var(--mono);font-size:42px;line-height:1;color:var(--ink)}
+  .score .of{font-family:var(--mono);font-size:17px;color:var(--inkSoft)}
+  .score .lv{margin-left:auto;font-family:var(--serif);font-size:23px;color:var(--vermilion)}
+
+  .bars{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+  .bar{display:flex;align-items:center;gap:8px;font-size:13.5px}
+  .bar .nm{width:78px;flex:0 0 auto}
+  .bar .track{flex:1;height:6px;border-radius:99px;background:#E0D8C4;overflow:hidden}
+  .bar .fill{height:6px;border-radius:99px}
+  .bar .num{font-family:var(--mono);font-size:11.5px;color:var(--inkSoft);width:44px;text-align:right}
+
+  .weak h4{margin:0;color:var(--vermilion);font-size:14.5px}
+  .weak p{margin:2px 0 0;font-size:14px;color:#33403C;line-height:1.7}
+  .weak .k{color:var(--brass)}
+
+  .week{display:flex;align-items:baseline;gap:12px}
+  .week .no{font-family:var(--mono);font-size:26px;line-height:1;color:var(--vermilion)}
+  .week .lab{font-size:11px;color:var(--brass);letter-spacing:.15em}
+  .week .ttl{font-family:var(--serif);font-size:18px;color:var(--ink)}
+  ul.items{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+  ul.items li{font-size:14px;color:#33403C;line-height:1.7;display:flex;gap:8px}
+  ul.items li .d{color:var(--brass);flex:0 0 auto}
+  ul.items li.focus{background:#F6EFE0;border-radius:3px;padding:6px 8px}
+  ul.items li.focus .d{color:var(--vermilion);font-weight:700}
+
+  ol.steps{margin:8px 0 0;padding-left:20px;font-size:14px;color:#33403C;line-height:1.75}
+  ul.plain{list-style:none;margin:8px 0 0;padding:0;font-size:14px;color:#33403C;line-height:1.75}
+
+  .danger{display:flex;gap:9px;padding:8px 0;border-bottom:1px solid #E5DDCA}
+  .danger:last-child{border-bottom:0}
+  .danger .sw{width:7px;flex:0 0 auto;border-radius:2px}
+  .danger .t{font-size:13.5px;font-weight:700;color:var(--ink)}
+  .danger .t span{font-weight:400;color:var(--brass)}
+  .danger .d{font-size:12px;color:#5A6B66;line-height:1.6}
+
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{color:var(--brass);font-weight:400;text-align:right;padding:4px 0}
+  th:first-child{text-align:left}
+  td{font-family:var(--mono);text-align:right;padding:6px 0;border-top:1px solid #E5DDCA;color:var(--ink)}
+  td:first-child{text-align:left}
+
+  .ptrow{margin-bottom:8px}
+  .ptrow .a{font-size:13.5px;font-weight:700;color:var(--ink)}
+  .ptrow .b{font-family:var(--mono);font-size:11.5px;color:#5A6B66;line-height:1.7}
+
+  @media (prefers-reduced-motion: no-preference){
+    .card{animation:rise .22s ease-out}
+    @keyframes rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">1ヶ月後の半荘に向けて</div>
+    <h1>麻雀 実力診断＋強化ドリル</h1>
+    <p class="lede">四人麻雀・半荘・<b>赤ドラあり（赤5×3枚）</b>・食いタンあり前提。<span id="qcount"></span>問で現在地を測り、弱いところだけを4週間で潰します。</p>
+  </header>
+  <nav id="nav"></nav>
+  <main id="app"></main>
+</div>
+
+<script>
+/* ===================== data ===================== */
+const CATS = ["牌効率","押し引き","守備","鳴き","待ち・点数"];
+
+const CAT_NOTE = {
+  "牌効率":"ブロックの数え方と、手牌を最短でテンパイに近づける選択。",
+  "押し引き":"リーチを打つ／押す／降りるの判断。ここが最も点数に効く。",
+  "守備":"ベタオリの手順と危険度の把握。放銃を減らす技術。",
+  "鳴き":"鳴いた後にアガれるか、守備力をどこまで削るか。",
+  "待ち・点数":"自分の待ちと打点を正しく数える。判断の前提になる。"
+};
+
+const RX = {
+  "牌効率":{
+    drill:"何切る問題を1日10問。答えより先に「ブロックはいくつあるか」を数えてから選ぶ。",
+    rule:"ブロックが6つ以上あるときはペンチャン・端カンチャンから外す。赤5は浮いていても切らない。"},
+  "押し引き":{
+    drill:"対局中、リーチが入った瞬間に「良形か／打点はあるか／何シャンテンか」を声に出して3秒で判定する。",
+    rule:"2シャンテン以下は無条件で降りる。良形か打点のどちらかが突出していれば押す。赤2枚以上なら愚形でも押してよい。"},
+  "守備":{
+    drill:"1日1半荘は「リーチが入ったら必ずベタオリ」の縛りでプレーし、降り切る感覚を体に入れる。",
+    rule:"降りると決めたら、まず手牌の安全牌を数える。切る順は現物→字牌→スジ→端寄り無筋。"},
+  "鳴き":{
+    drill:"鳴く前に必ず「鳴いた後の役は何か」を口に出す。答えられない鳴きは全部見送る。",
+    rule:"役牌・タンヤオ・混一・トイトイ以外は鳴かない。赤が絡んだタンヤオは積極的に鳴いてよい。"},
+  "待ち・点数":{
+    drill:"テンパイするたび、待ちの牌と枚数、アガったときの点数を数えてから打牌する。",
+    rule:"4枚連続＝両端のノベタン、5連続＝三面張。赤は1枚1翻だが役にはならない。"}
+};
+
+const Q = [
+{id:1,cat:"牌効率",
+ scene:"東1局 3巡目 / ドラ 1p / 自分は西家",
+ hand:["2m","3m","4m","5m","6m","7m","3p","4p","5p","東","東","1s","5s","9p"],
+ q:"3面子＋東東は確定。5ブロック目の種にするなら、どの浮き牌を残す？",
+ choices:["1s","5s","9p","東を1枚外して作り直す"],answer:1,
+ why:"浮き牌の価値は「そこから両面がいくつ作れるか」で決まる。5sは34sと67sの両方に育つので受けが最も広い。1s・9pは片側にしか伸びず、両面になる確率が半分以下。まず5sを残し、1sと9pを順に処理する。"},
+
+{id:2,cat:"牌効率",
+ scene:"東1局 5巡目 / ドラなし",
+ hand:["2m","3m","4m","6m","7m","8m","1p","2p","4p","5p","5s","6s","白","白"],
+ q:"何を切る？",
+ choices:["1p","4p","6s","白"],answer:0,
+ why:"ブロックが6つあり1つ余る（234m・678m・12p・45p・56s・白白）。余らせるのは最弱ブロック。12pのペンチャンは受けが3pの4枚だけで、両面の8枚に対して半分。ペンチャン・端カンチャンから外すのが原則。"},
+
+{id:3,cat:"牌効率",
+ scene:"東1局 6巡目 / ドラ 5s",
+ hand:["2m","3m","4m","5m","6m","7m","3p","4p","5p","7p","8p","5s","5s","9m"],
+ q:"何を切る？",
+ choices:["9m","5s","7p","8p"],answer:0,
+ why:"9m切りでテンパイ（6p9p待ち）。ドラ対子は雀頭として置いたままにするのが基本で、崩すと打点が半分以下になる。この手はリーチ・平和・ドラ2で7700〜満貫圏。テンパイ＋良形＋高打点が揃っているので、以降は多少の無筋なら押してよい。"},
+
+{id:4,cat:"牌効率",
+ scene:"東1局 7巡目 / ドラ 東 / まだ誰もリーチなし",
+ hand:["2m","3m","4m","6m","7m","3p","4p","5p","7p","8p","東","東","5s","9s"],
+ q:"何を切る？",
+ choices:["東","5s","9s","7p"],answer:2,
+ why:"234m・345p・67m・78p・東東で5ブロック完成済み。浮いている5sと9sは不要だが、切る順は価値の低い端牌から。東はドラ対子かつ雀頭なので絶対に手放さない。ドラ2の1シャンテンは、ここから打点が跳ねる本線。"},
+
+{id:21,cat:"牌効率",
+ scene:"東1局 6巡目 / ドラ 東 / 赤5m を持っている",
+ hand:["0m","7m","8m","9m","3p","4p","5p","6p","7p","東","東","4s","5s","9s"],
+ q:"何を切る？",
+ choices:["9s","0m（赤5m）","7p","東"],answer:0,
+ why:"打9sと打5mは受け入れがどちらも5種19枚でまったく同じ。効率が同じなら打点で決める。赤5mは使えれば無条件で1翻なので、切るのは9sのほう。5という数字は34mと67mの両方に育つ最良の浮き牌でもある。効率が並んだときは打点、というのが赤ありルールの基本判断。"},
+
+{id:5,cat:"押し引き",
+ scene:"東1局 4巡目 / 自分は子 / ドラなし / 全員無風",
+ hand:["2m","3m","4m","5m","6m","7m","3p","4p","5p","7p","9p","白","白"],
+ q:"8p待ちのカンチャンでテンパイ。役はなし。どうする？",
+ choices:["即リーチ","ダマで様子を見る","テンパイを崩して両面変化を待つ","白を切って手役を狙う"],answer:0,
+ why:"愚形でも先制リーチは強い。①リーチ・ツモ・裏・一発で打点が2〜3倍になる、②他家が降りるので放銃されにくく、自分の放銃機会も減る。「愚形だからダマ」は初中級者が最も損をしている判断。迷ったら先制テンパイは即リーチでよい。"},
+
+{id:6,cat:"押し引き",
+ scene:"南1局 12巡目 / 対面がリーチ（一発目）/ 点数は平ら",
+ hand:[],
+ q:"自分は2シャンテン。ツモってきたのは無筋の5s。どうする？",
+ choices:["5sを切って手を進める","現物を切ってベタオリ","比較的危険度の低い無筋を選んで押す","鳴いて速度を上げる"],answer:1,
+ why:"2シャンテンからアガれる確率はおよそ1割前後。一方で無筋を1枚押す放銃率は5〜6%あり、しかも押し続ける必要がある。テンパイしていない段階での押しは、ほぼ全てのケースで期待値マイナス。「2シャンテン以下は無条件で降りる」を機械的なルールにしてよい。"},
+
+{id:7,cat:"押し引き",
+ scene:"東2局 9巡目 / 下家がリーチ / 自分は子",
+ hand:[],
+ q:"自分は両面待ちのテンパイ、リーチをかければリーチ・ドラ1（＋ツモ裏で満貫圏）。宣言牌は無筋。どうする？",
+ choices:["無筋を切ってリーチ","ダマでテンパイ維持","ベタオリ","現物を切ってテンパイを崩す"],answer:0,
+ why:"押しの条件は「良形」「打点」「テンパイ」の3つ。この手は全部満たしている。良形高打点テンパイなら、リーチ者に対してほぼ全ての無筋を押してよい。しかもリーチをかけないと打点が伸びず、押している意味が薄れる。降りるべきなのは愚形・安手・シャンテン不足のとき。"},
+
+{id:22,cat:"押し引き",
+ scene:"南1局 9巡目 / 上家がリーチ / 自分は子",
+ hand:[],
+ q:"自分はカンチャン待ちのテンパイ。ただし赤5s2枚とドラ1で、リーチをかければ満貫が見える。宣言牌は無筋。どうする？",
+ choices:["無筋を切ってリーチ","ダマでテンパイ維持","ベタオリ","現物を切って回る"],answer:0,
+ why:"赤ドラありでは「愚形だから降りる」が成立しなくなる。押し引きは〈形〉と〈打点〉の掛け算で、片方が突出していればもう片方の不足を補える。愚形でも満貫クラスなら押しが優位で、しかもリーチをかけないと打点が伸びないので押すならリーチ。裏を返せば、赤もドラもない安手のときの降りは、赤なしルールより徹底する必要がある。"},
+
+{id:8,cat:"押し引き",
+ scene:"オーラス（南4局）/ 自分はトップ目で2着と12000点差 / 8巡目に上家からリーチ",
+ hand:[],
+ q:"自分は1シャンテン。どうする？",
+ choices:["押してアガリに向かう","鳴いて速度を上げる","ベタオリ","形式テンパイを取りにいく"],answer:2,
+ why:"リードが大きいオーラスでは、順位が落ちる原因は実質「放銃」だけ。得点の期待値ではなく順位の期待値で判断する場面で、アガリの価値はほぼゼロ、放銃の損失は最大。役満まで打たなくても、満貫〜跳満の放銃で逆転される。ここは全ツッパの逆で、全ベタオリが正解。"},
+
+{id:9,cat:"押し引き",
+ scene:"南2局 8巡目 / 親がリーチ / 自分は子",
+ hand:[],
+ q:"自分はカンチャン待ちのテンパイで役なし・ドラなし（リーチのみ）。リーチをかけるには無筋を切る必要があり、手元には現物が1枚ある。どうする？",
+ choices:["無筋を切ってリーチ","現物を切って降りる","無筋を切ってダマ","カンをして打点を上げる"],answer:1,
+ why:"親リーチへの放銃は子の1.5倍の失点で、さらに親が連荘する。一方こちらは愚形（受け4枚）・安手。押しの3条件のうち「良形」も「打点」も欠けている。テンパイしていても降りるべき局面があり、その典型が「親リーチ×愚形×安手」。現物があるなら迷わず降りる。"},
+
+{id:10,cat:"守備",
+ scene:"上家がリーチ / 自分は降りると決めた",
+ hand:[],
+ q:"そのリーチ者に対して、理論上100%放銃しない牌はどれか？",
+ choices:["リーチ者自身の河にある牌","誰も切っていない字牌","ドラ表示牌","リーチ者の現物のスジ"],answer:0,
+ why:"リーチ者自身が捨てた牌はフリテンになるためロンできない＝絶対安全。同じく「リーチ後に他家が切って通った牌」も絶対安全で、この2つをまとめて現物と呼ぶ。ベタオリの第一候補は常に現物。生牌の字牌は「比較的安全」でしかなく、単騎・シャンポンには当たる。"},
+
+{id:11,cat:"守備",
+ scene:"リーチ者の河に 4m がある",
+ hand:["4m"],
+ q:"スジになる（両面待ちには当たらない）のはどれか？",
+ choices:["1m","2m","3m","5m"],answer:0,
+ why:"4mが河にあるなら、23mの両面（1m-4m待ち）も56mの両面（4m-7m待ち）もフリテンで成立しない。よって1mと7mがスジ。ただしスジが防げるのは両面だけで、シャンポン・単騎・カンチャンには当たる。スジ＝安全ではなく「危険度が半分以下になる」と理解する。"},
+
+{id:12,cat:"守備",
+ scene:"10巡目にリーチが入り、降りると決めた",
+ hand:[],
+ q:"最初にすべきことは？",
+ choices:["一番安全な牌をとにかく切る","手牌の安全牌が何枚あるか数える","危険牌を先に処理しておく","形式テンパイの可能性を確認する"],answer:1,
+ why:"ベタオリは安全牌の在庫管理。残り約9巡に対して安全牌が3枚しかないなら、どこかで無筋を切る必要があり、それは比較的危険度の低い牌を「早い段階で」選んで切るべき。逆に安全牌が足りているなら、危険な牌は一生切らなくていい。数える前に切り始めると、終盤に無筋しか残らず一番危ない状況になる。"},
+
+{id:13,cat:"守備",
+ scene:"リーチ者に対する危険度の比較",
+ hand:[],
+ q:"最も危険度が低いのはどれか？",
+ choices:["無筋の5m","無筋の1p","スジの8s","1枚切れの字牌"],answer:3,
+ why:"おおまかな危険度は 無筋の中張牌(4〜6) ＞ 無筋の端寄り(1,2,8,9) ＞ スジ ＞ 1枚切れの字牌 ＞ 現物。字牌は順子に使えないので、当たるのは単騎かシャンポンのみ。すでに1枚見えていれば残り2枚となり、シャンポンで待たれている確率が大きく下がる。字牌は2枚切れならほぼ通る。"},
+
+{id:14,cat:"守備",
+ scene:"リーチ者に対して / 自分の手牌に 8p が4枚ある",
+ hand:["8p","8p","8p","8p"],
+ q:"このとき比較的通りやすくなるのはどれか？",
+ choices:["9p","7p","6p","5p"],answer:0,
+ why:"9pが両面で当たる形は78p（6p-9p待ち）だけ。その8pが4枚とも自分の手にあるので、相手は78pを持てない。9pはカンチャン・ペンチャンでも当たらない（端牌のため）ので、残るは単騎とシャンポンのみ。これがノーチャンス。壁は自分の手牌・河・ドラ表示を合わせて4枚見えているかで判断する。"},
+
+{id:23,cat:"守備",
+ scene:"赤ドラあり（赤5が各色1枚ずつ）のルールでの守備方針",
+ hand:["0m","0p","0s"],
+ q:"赤なしルールと比べて、リーチへの対応はどう変わる？",
+ choices:["相手の打点も上がるので、降りるときはより早く・徹底する","自分の手も高いので降りる必要がなくなる","何も変わらない","スジが安全になるので押しやすくなる"],answer:0,
+ why:"赤が3枚入ると場の平均打点が1翻近く上がる。放銃1回の失点が大きくなるので、降りると決めた局は現物だけで押し通すくらい徹底してよい。同時に自分の手も高くなるため、押すときは強く押す。つまり判断が両極端になるのが赤ありルールの特徴で、最も損をするのは「なんとなく押して、なんとなく放銃する」中間の打ち方。"},
+
+{id:15,cat:"鳴き",
+ scene:"東1局 8巡目 / ドラなし / 上家が 1s を切った",
+ hand:["2m","3m","4m","5m","6m","7m","3p","4p","9p","9p","2s","3s","7s"],
+ q:"チーすればテンパイ（7s切りで2p5p待ち）になる。どうする？",
+ choices:["チーしてテンパイを取る","チーせず門前で進める","ポンできないので何もしない","9pを切って手を変える"],answer:1,
+ why:"チーすると123sが入るのでタンヤオは消え、鳴いた時点でリーチも打てない。この手に他の役はなく、テンパイしてもアガれない。「テンパイになるから鳴く」は最も多い初級ミス。鳴く前に必ず〈鳴いた後の役は何か〉を口に出して確認する。役牌・タンヤオ・混一・トイトイのどれにも該当しないなら鳴かない。"},
+
+{id:16,cat:"鳴き",
+ scene:"東1局 3巡目 / 手牌に 中中 / 他はバラバラ / ドラ1枚あり",
+ hand:["中","中"],
+ q:"他家が 中 を切った。どうする？",
+ choices:["ポンして役を確定させる","門前リーチを目指してスルー","手がバラバラなのでスルー","一度見送って2枚目でポン"],answer:0,
+ why:"役牌のポンは「役の確定」と「3〜4巡分の速度」が同時に手に入る唯一の鳴き。手がバラバラなほど門前でまとまる確率は低く、ポンの相対価値は上がる。ドラが1枚あれば3900、2枚で満貫が見える。ただし鳴くと守備力が落ちるので、以降は字牌などの安全牌を1枚キープしておく。"},
+
+{id:24,cat:"鳴き",
+ scene:"東1局 6巡目 / 食いタンあり / 赤5p を使い切っている / 上家が 2s を切った",
+ hand:["2m","2m","3m","4m","5m","4p","0p","6p","8p","3s","4s","6s","7s"],
+ q:"チーすれば8p切りでテンパイ（5s8s待ち・タンヤオ確定）。どうする？",
+ choices:["チーしてテンパイを取る","門前リーチを目指してスルー","打点が足りないのでスルー","赤5pを外して安全度を上げる"],answer:0,
+ why:"チーしてもタンヤオ＋赤1で2翻、5sで出アガリすれば赤5sが乗って3翻＝5800。赤ありルールでは鳴いても十分な打点になるので、門前リーチにこだわる理由が薄い。速度と打点が両立する鳴きは積極的に取る。ただし鳴いた分だけ手牌が短くなり守備力が落ちるので、以降は安全牌を1枚キープしておく。"},
+
+{id:17,cat:"鳴き",
+ scene:"南3局 17巡目（残り1巡）/ リーチ者なし / 自分は子",
+ hand:[],
+ q:"1枚切ればテンパイだが役がなく、アガリ牌は全て他家に使われていて出アガリもツモもできない。どうする？",
+ choices:["テンパイを取る","ノーテンで安全に流す","手を崩して次局に備える","関係ないので何でもよい"],answer:0,
+ why:"流局時のノーテン罰符は、テンパイとノーテンで最大3000点の差になる。さらに親なら連荘できる。アガれない形でも形式テンパイの価値は大きい。副露してでも取りにいく価値がある。ただしリーチが入っている場合は、放銃リスクと3000点を天秤にかけて判断する（多くの場合は降りが優先）。"},
+
+{id:18,cat:"待ち・点数",
+ scene:"テンパイしている自分の手牌",
+ hand:["2m","3m","4m","5m","6m","7m","3p","4p","5p","4s","5s","6s","7s"],
+ q:"待ちは？",
+ choices:["4s・7s","3s・6s","3s・8s","5s・6s"],answer:0,
+ why:"4567sは「456s＋7s単騎」または「567s＋4s単騎」の2通りに読めるノベタン形。4枚連続の両端が待ちになる。見落としが多い形の代表で、自分の待ちを間違えるとリーチ判断も押し引きも全部狂う。4枚連続＝両端、と覚える。"},
+
+{id:19,cat:"待ち・点数",
+ scene:"テンパイしている自分の手牌",
+ hand:["2m","3m","4m","5m","6m","7m","3p","4p","5p","6p","7p","9s","9s"],
+ q:"待ちは？",
+ choices:["2p・5p","5p・8p","2p・5p・8p","4p・7p"],answer:2,
+ why:"34567pの5連続形は三面張。345p＋67p（5p8p待ち）と567p＋34p（2p5p待ち）の両方に読めるので2p・5p・8pの11枚待ち。両面の8枚を上回る最良形で、こうなったら迷わずリーチ。5連続＝三面張、と形で覚える。"},
+
+{id:20,cat:"待ち・点数",
+ scene:"自分は子 / 裏ドラは乗らなかった",
+ hand:[],
+ q:"リーチ・ツモ・平和・ドラ1でアガった。点数は？",
+ choices:["700 / 1300","1300 / 2600","2000 / 3900","2000 / 4000"],answer:1,
+ why:"リーチ＋ツモ＋平和＋ドラ1で4翻。平和ツモは20符固定なので20符4翻＝1300/2600（計5200）。麻雀で最も頻出する形のひとつなので暗記してよい。ここに一発か裏1が乗れば5翻＝満貫で2000/4000。逆に言えば「あと1翻」で1.5倍になるので、リーチをかける価値がここに出る。"},
+
+{id:25,cat:"待ち・点数",
+ scene:"赤ドラの扱い",
+ hand:["0m","0p","0s"],
+ q:"赤ドラの数え方として正しいのは？",
+ choices:["1枚1翻。ただしドラは役ではないので、赤だけではアガれない","1枚1翻。赤があれば役なしでもアガれる","1枚2翻として数える","翻ではなく符が加算される"],answer:0,
+ why:"赤は通常のドラと同じく1枚1翻だが、ドラは役ではないので赤だけではアガれない。リーチ・タンヤオ・役牌などの役が必ず1つ必要。裏を返せば、赤を持った時点で「役さえ付けば3900〜満貫」が確定するので、赤を引いたらすぐに〈リーチで行くのか、鳴きタンヤオか、役牌か〉と役の付け方を決めてしまうのが赤ありルールの基本動作。"}
+];
+
+/* ---- ドリル専用の追加問題（診断25問には含めない） ---- */
+const EXTRA = [
+
+/* 牌効率 */
+{id:101,cat:"牌効率",
+ scene:"東1局 5巡目 / ドラなし",
+ hand:["2m","3m","4m","6m","7m","8m","1p","2p","3s","5s","7s","8s","白","白"],
+ q:"何を切る？",
+ choices:["1p","3s","8s","白"],answer:0,
+ why:"ブロックが6つ（234m・678m・12p・35s・78s・白白）あるので1つ余る。12pのペンチャンは受けが3pの4枚、35sのカンチャンは受けが4sの4枚で枚数は同じ。だが35sは4sを引けばタンヤオが残り、5sや3sから両面に変化する目もある。12pは3pを引いて123pになるだけで変化も打点もない。同じ4枚受けなら端から外す。"},
+
+{id:102,cat:"牌効率",
+ scene:"東1局 6巡目 / 赤5s を持っている / ドラ 9m",
+ hand:["2m","3m","4m","6m","7m","8m","2p","4p","0s","6s","7s","8s","白","白"],
+ q:"何を切る？",
+ choices:["8s","0s（赤5s）","2p","白"],answer:0,
+ why:"5678sは「両面が2つ」ではなく1面子＋浮き牌1枚。5sか8sを切ればどちらも3p待ちのテンパイになり、待ちも受け入れも完全に同じ。ならば赤5sを残すほうを選ぶ。同じ手が1翻変わるので、この選択だけで3900と7700ほどの差になる。4連続形の数え間違いと赤の温存が同時に問われる形。"},
+
+{id:103,cat:"牌効率",
+ scene:"東1局 8巡目 / ドラなし",
+ hand:["9m","2m","3m","4m","3p","4p","5p","6p","7p","5s","6s","7s","白","白"],
+ q:"何を切る？",
+ choices:["9m","3p","7p","白"],answer:0,
+ why:"9m切りでテンパイ。34567pは三面張なので待ちは2p・5p・8pの11枚になる。3pや7pを切ると両面8枚に落ちて損。5連続形＝三面張と形で覚え、絶対に崩さない。ここは迷わずリーチ。"},
+
+{id:104,cat:"牌効率",
+ scene:"東1局 7巡目 / ドラなし",
+ hand:["2m","3m","4m","6m","7m","8m","2p","3p","4p","5p","4s","5s","白","白"],
+ q:"何を切る？",
+ choices:["2p","4s","白","6m"],answer:0,
+ why:"2345pは「両面が2つ」ではなく「面子1つ＋浮き牌1枚」。2pを切った時点で345pが完成し、45sと白白でテンパイ（3s6s待ち）になる。4連続形を2ブロックと数えてしまうのが典型的な数え間違いで、テンパイの見逃しにつながる。"},
+
+{id:105,cat:"牌効率",
+ scene:"東1局 5巡目 / ドラなし",
+ hand:["2m","3m","4m","6m","7m","8m","1p","3p","6p","7p","5s","7s","白","白"],
+ q:"何を切る？",
+ choices:["1p","5s","7s","白"],answer:0,
+ why:"13pと57sはどちらもカンチャンで受けは4枚ずつ。ただし57sは6sを引けば567sになりタンヤオが残り、5sや7sから両面への変化もある。13pは2pを引いて123pになるだけ。同じ愚形なら端に寄っているほうから外す。"},
+
+/* 守備 */
+{id:111,cat:"守備",
+ scene:"南1局 11巡目 / 上家がリーチ（7巡目に宣言）/ 自分は2シャンテンで降りると決めた",
+ river:{t:["9m","1p","東","5s","2m","西","7p","3m"],riichi:6},
+ hand:[],
+ q:"次のうち、このリーチ者に絶対に放銃しない牌はどれか？",
+ choices:["5m","3m","4s","北"],answer:1,
+ why:"3mはリーチ後に本人が切っているので完全な現物。フリテンになるため絶対に当たらない。5m・4s・北はどれも通っていない。降りると決めたら、まず河を上から下まで見て現物を全部拾い出すのが最初の作業になる。宣言牌より後に切られた牌を見落としやすいので注意。"},
+
+{id:112,cat:"守備",
+ scene:"東2局 9巡目 / 対面がリーチ / 現物はすでに切り終えた",
+ river:{t:["4m","1p","白","8p","2s","5m","東"],riichi:5},
+ hand:[],
+ q:"次のうち最も危険度が低いのはどれか？",
+ choices:["1m","3p","6s","3s"],answer:0,
+ why:"4mが切られているので、23mの両面（1m-4m待ち）は成立しない。1mが当たるのはシャンポンか単騎だけになり、危険度は無筋の半分以下。3p・6s・3sはいずれも無筋。なお5mはリーチ宣言牌なので、そのスジである2m・8mは「スジひっかけ」の可能性があり、同じスジでも一段危険。"},
+
+{id:113,cat:"守備",
+ scene:"南2局 13巡目 / 下家がリーチ / 現物なし / 自分の手に 2s が4枚ある",
+ hand:["2s","2s","2s","2s"],
+ q:"次のうち比較的通りやすいのはどれか？",
+ choices:["1s","4m","5p","6s"],answer:0,
+ why:"1sが両面で当たる形は23s（1s-4s待ち）だけ。その2sを自分が4枚とも持っているので、相手は23sを作れない。1sは端牌なのでカンチャン・ペンチャンにも当たらず、残るは単騎とシャンポンだけ。これがノーチャンス。壁は自分の手牌・河・ドラ表示牌を合わせて4枚見えているかで判断する。"},
+
+{id:114,cat:"守備",
+ scene:"東3局 12巡目 / 親がリーチ / 現物は切り終えた / 北 が河に2枚見えている",
+ hand:[],
+ q:"次のうち最も安全なのはどれか？",
+ choices:["北","白（生牌）","6m（無筋）","3s（無筋）"],answer:0,
+ why:"字牌は順子に使えないので、当たるのは単騎かシャンポンだけ。北は2枚切れで残り2枚しかなく、相手がその2枚を対子で抱えている場合しかシャンポンにならない。放銃率は1〜2%程度で、無筋の数牌（5〜6%）はもちろん、スジより安全なことが多い。字牌の切れ枚数は常に数えておく。"},
+
+{id:115,cat:"守備",
+ scene:"南3局 14巡目 / 上家がリーチ / 安全牌が尽きた",
+ hand:[],
+ q:"全て無筋。どれを切る？",
+ choices:["5m","1p","6s","4p"],answer:1,
+ why:"全部無筋なら端牌から。1pが両面で当たるのは23pの1形だけなのに対し、5mは34m・67mの2形に当たる。実際の放銃率も端牌が4%前後、中張が6%前後で1.5倍ほど違う。降り切れないときは「一番マシな無筋」を選ぶ作業になるので、この序列は体に入れておく。"},
+
+{id:116,cat:"守備",
+ scene:"東1局 10巡目 / 下家がリーチ / その後、対面が 5p を切って通った",
+ hand:[],
+ q:"この 5p は自分にとってどうか？",
+ choices:["そのリーチ者には絶対に当たらない","スジと同程度に安全","半分程度の安全度","リーチ者にも当たる可能性がある"],answer:0,
+ why:"フリテンになるため、そのリーチ者からは絶対にロンされない。本人の河にある牌と同じ扱いでよく、これも現物と呼ぶ。ベタオリでは真っ先に使える牌。ただしリーチしていない他家がダマテンで待っている可能性は残るので、複数人が押している局面では別途注意する。"},
+
+{id:117,cat:"守備",
+ scene:"リーチ宣言牌のスジについて",
+ hand:[],
+ q:"「4mでリーチ → そのスジの1m・7m」は、他のスジと比べてどうか？",
+ choices:["他のスジより危険度が高い","他のスジより安全","スジなので絶対に当たらない","スジの中では最も安全"],answer:0,
+ why:"宣言牌でスジひっかけを仕掛けている可能性があるため。7m待ちの手で4mを引いてリーチ、という形は実戦で頻繁に起こる。宣言牌のスジは「スジだから安全」と考えず、他に候補があるなら後回しにする。それでも無筋よりは安全なので、無筋しか無い場面では選択肢に入る。"},
+
+{id:118,cat:"守備",
+ scene:"南1局 8巡目 / 対面がリーチ / 自分は2シャンテンで降りると決めた / 残りは約10巡 / 手牌の現物は2枚だけ",
+ hand:[],
+ q:"どう進めるのが正しいか？",
+ choices:["現物2枚を先に切り、残りはその都度考える","現物は温存し、比較的安全な牌から先に処理する","形式テンパイを狙って押す","一番危険な牌から先に処理する"],answer:1,
+ why:"残り10巡に対して現物が2枚では足りない。現物を先に使い切ると、終盤に無筋しか残らず最も危険な状態で押すことになる。現物は最後の2巡ぶんの保険として温存し、まず字牌やスジなど比較的安全な牌から処理していく。ベタオリは安全牌の在庫管理、というのはこの意味。"},
+
+/* 待ち・点数（待ち読み） */
+{id:121,cat:"待ち・点数",
+ scene:"テンパイしている自分の手牌",
+ hand:["2m","3m","4m","5m","6m","7m","3p","4p","5p","6p","7p","8p","9p"],
+ q:"待ちは？",
+ choices:["3p・6p・9p","2p・5p・8p","3p・9p","6pのみ"],answer:0,
+ why:"3456789pは7連続形。345p＋678p＋9p単騎、345p＋789p＋6p単騎、456p＋789p＋3p単騎の3通りに読めるので、待ちは3p・6p・9pの3面待ち。3枚並びを2つ抜いて残った1枚が単騎、と考えると数えやすい。"},
+
+{id:122,cat:"待ち・点数",
+ scene:"テンパイしている自分の手牌",
+ hand:["2m","3m","4m","5m","6m","7m","3p","4p","5p","4s","5s","6s","6s"],
+ q:"待ちは？",
+ choices:["3s・6s","6sのみ","3s・6s・7s","4s・7s"],answer:0,
+ why:"4566sは「456s＋6s単騎」と「66s＋45sの両面」の2通りに読める。合わせて3s・6s待ちになり、実質的に両面と同じ広さがある。単騎待ちだと思い込んで待ち替えする必要はない。中ぶくれ（亜両面）と呼ばれる形。"},
+
+{id:123,cat:"待ち・点数",
+ scene:"テンパイしている自分の手牌",
+ hand:["2m","3m","4m","5m","6m","7m","3p","4p","5p","3s","3s","3s","4s"],
+ q:"待ちは？",
+ choices:["2s・4s・5s","4sのみ","2s・5s","3s・4s"],answer:0,
+ why:"3334sは「333s＋4s単騎」と「33s＋34sの両面」の2通りに読める。前者で4s、後者で2s・5sが当たるので、待ちは2s・4s・5sの3面待ち。暗刻の隣に1枚くっついた形は多面張になる、と覚えておく。"},
+
+{id:124,cat:"待ち・点数",
+ scene:"テンパイしている自分の手牌",
+ hand:["2m","3m","4m","6m","7m","8m","5p","5p","5p","6p","7p","9s","9s"],
+ q:"待ちは？",
+ choices:["5p・8p・9s","5p・8p","8pのみ","6p・9p"],answer:0,
+ why:"55567pは「555p＋67pの両面（5p8p待ち）」と「567p＋55pの対子（99sとのシャンポン）」の2通りに読める。よって5p・8p・9sの3面待ち。刻子と順子が重なる形は待ちが増えるので、リーチの前に必ず数え直す。エントツ形と呼ばれる。"},
+
+{id:125,cat:"待ち・点数",
+ scene:"テンパイしている自分の手牌",
+ hand:["2m","3m","4m","5m","6m","7m","3p","4p","5p","2s","2s","9s","9s"],
+ q:"待ちは？",
+ choices:["2s・9s","2s・3s","9sのみ","1s・2s"],answer:0,
+ why:"対子が2つ残った形はシャンポン待ち。当たり牌は2sと9sだが、それぞれ残り2枚ずつで合計4枚しかない。両面の8枚に比べて半分なので、テンパイする前なら片方を落として両面に受け替える選択も検討する。"},
+
+{id:126,cat:"待ち・点数",
+ scene:"テンパイしている自分の手牌",
+ hand:["2m","3m","4m","5m","6m","7m","3p","4p","5p","1s","1s","1s","2s"],
+ q:"待ちは？",
+ choices:["2s・3s","3sのみ","1s・2s","2s・4s"],answer:0,
+ why:"1112sは「111s＋2s単騎」と「11s＋12sのペンチャン」の2通りに読める。よって2s・3sの2面待ち。端の暗刻でも隣に牌がくっつけば多面張になるので、単騎と決めつけない。"},
+
+{id:127,cat:"待ち・点数",
+ scene:"テンパイしている自分の手牌",
+ hand:["2m","3m","4m","5m","6m","7m","3p","4p","5p","6p","7p","8p","5s"],
+ q:"待ちは？",
+ choices:["5s単騎","4s・7s","5s・6s","テンパイしていない"],answer:0,
+ why:"面子が4つ完成しているので、残った5sが雀頭になるのを待つ単騎待ち。残りは3枚。単騎は待ち替えが利くのが利点で、他家の河を見て出やすい牌に移せる。字牌に移せるならそのほうが出やすい。"},
+
+{id:128,cat:"待ち・点数",
+ scene:"テンパイしている自分の手牌",
+ hand:["2m","3m","4m","6m","7m","8m","9p","9p","4s","5s","6s","7s","8s"],
+ q:"待ちは？",
+ choices:["3s・6s・9s","3s・6s","6s・9s","5s・8s"],answer:0,
+ why:"45678sの5連続形は三面張で、3s・6s・9sの11枚待ち。5連続を見たら「先頭の1つ外、そこから3つずつ」と機械的に数えるのが早い（34567なら2・5・8、45678なら3・6・9）。"}
+];
+
+const ALL = Q.concat(EXTRA);
+
+const WEEKS = [
+ {n:1,lab:"第1週",ttl:"降りる技術を体に入れる",core:[
+  "リーチが入ったら必ずベタオリ、の縛りで1日1〜2半荘。アガリを一切狙わない。",
+  "降りると決めた瞬間に手牌の安全牌を数える習慣をつける（現物→字牌→スジ→端寄り無筋）。",
+  "1局終わるごとに「無筋を何枚切ったか」を数える。目標はゼロ。",
+  "無限ドリルの「守備」を1日10問。現物が無い前提なので、スジと壁の判断が鍛えられる。"]},
+ {n:2,lab:"第2週",ttl:"テンパイまでの最短距離",core:[
+  "何切る問題を1日10問。選ぶ前に必ずブロック数を数える。",
+  "配牌を取ったら5ブロック候補を先に決め、それ以外は早めに処分する。",
+  "テンパイしたら毎回、待ちの種類と枚数を口に出して数える。",
+  "無限ドリルの「待ち読み」と「残り枚数」を1日10問。多面張の見落としと数え間違いを潰す。"]},
+ {n:3,lab:"第3週",ttl:"押し引きの基準を固定する",core:[
+  "リーチが入った瞬間に3秒で判定：良形か／打点はあるか／何シャンテンか。",
+  "「2シャンテン以下は降りる」「良形か打点のどちらかが突出していれば押す」を例外なく守る。",
+  "赤の枚数を毎局カウントする。赤2枚以上なら愚形でも押す、赤ゼロの安手なら早々に降りる。",
+  "先制テンパイは愚形でも即リーチ。ダマにした局は必ず理由を書き出す。"]},
+ {n:4,lab:"第4週",ttl:"本番形式で通し、判断を体に残す",core:[
+  "半荘を通しでプレー。局ごとの自分の判断だけをメモし、翌日に見直す。",
+  "この診断をもう一度受け、第1週の結果と比べる（記録タブで推移が見られます）。",
+  "前日は新しいことを覚えない。早見表の危険度順と点数だけ確認する。"]}
+];
+
+const DANGER = [
+ ["現物","絶対安全","リーチ者の河にある牌＋リーチ後に通った牌"],
+ ["2枚切れの字牌","ほぼ安全","単騎・シャンポンの残りが極小"],
+ ["1枚切れの字牌","かなり安全","順子に使えないので当たるのは単騎とシャンポンだけ"],
+ ["ノーチャンスの端牌","安全寄り","隣の隣が4枚見え。両面・カンチャン・ペンチャンが消える"],
+ ["生牌の字牌","やや安全","序盤リーチほど安全、終盤ほど危険"],
+ ["スジの端寄り（1,9）","中","両面は消えるがシャンポン・単騎は残る"],
+ ["スジの中張（4,5,6）","中","スジひっかけと愚形が残る"],
+ ["無筋の端寄り（1,2,8,9）","危険","両面・シャンポンに当たる"],
+ ["無筋の中張（4,5,6）","最も危険","全ての待ちに当たりうる。降りるなら最後まで切らない"]
+];
+
+const POINTS = [
+ ["子 ロン","1翻30符 1000 / 2翻30符 2000 / 3翻30符 3900 / 4翻30符 7700"],
+ ["子 満貫〜","満貫 8000 / 跳満 12000 / 倍満 16000 / 三倍満 24000 / 役満 32000"],
+ ["親 ロン","1翻30符 1500 / 2翻30符 2900 / 3翻30符 5800 / 4翻30符 11600"],
+ ["親 満貫〜","満貫 12000 / 跳満 18000 / 倍満 24000 / 役満 48000"],
+ ["頻出ツモ","リーチツモ平和ドラ1＝1300/2600、満貫ツモ＝2000/4000（親4000オール）"]
+];
+
+
+/* ===================== 麻雀エンジン（自動出題用） ===================== */
+const TN = (function(){ const a=[]; "mps".split("").forEach(x=>{for(let n=1;n<=9;n++)a.push(n+x);});
+  ["東","南","西","北","白","發","中"].forEach(z=>a.push(z)); return a; })();
+const R = n => Math.floor(Math.random()*n);
+const pk = a => a[R(a.length)];
+function toTiles(c){ const a=[]; for(let i=0;i<34;i++) for(let k=0;k<c[i];k++) a.push(TN[i]); return a; }
+
+const suitCache = new Map();
+function suitTable(arr, isHonor){
+  const key=(isHonor?"z":"s")+arr.join("");
+  const hit=suitCache.get(key); if(hit) return hit;
+  const best=new Map(), w=arr.slice(), L=arr.length;
+  function put(m,p,pr){
+    const opts = pr>0 ? [0,1] : [0];
+    for(const hp of opts){ const k=m+","+hp, v = hp ? p+pr-1 : p+pr;
+      if(!best.has(k)||best.get(k)<v) best.set(k,v); }
+  }
+  function rec(i,m,p,pr){
+    if(i>=L){ put(m,p,pr); return; }
+    if(w[i]===0){ rec(i+1,m,p,pr); return; }
+    rec(i+1,m,p,pr);
+    if(w[i]>=3){ w[i]-=3; rec(i,m+1,p,pr); w[i]+=3; }
+    if(w[i]>=2){ w[i]-=2; rec(i,m,p,pr+1); w[i]+=2; }
+    if(!isHonor){
+      if(i<=L-3&&w[i]>0&&w[i+1]>0&&w[i+2]>0){ w[i]--;w[i+1]--;w[i+2]--; rec(i,m+1,p,pr); w[i]++;w[i+1]++;w[i+2]++; }
+      if(i<=L-2&&w[i]>0&&w[i+1]>0){ w[i]--;w[i+1]--; rec(i,m,p+1,pr); w[i]++;w[i+1]++; }
+      if(i<=L-3&&w[i]>0&&w[i+2]>0){ w[i]--;w[i+2]--; rec(i,m,p+1,pr); w[i]++;w[i+2]++; }
+    }
+  }
+  rec(0,0,0,0);
+  const list=[]; best.forEach((p,k)=>{ const t=k.split(",").map(Number); list.push([t[0],p,t[1]]); });
+  if(suitCache.size>20000) suitCache.clear();
+  suitCache.set(key,list); return list;
+}
+function shantenCore(c,noRuns){
+  const g=[suitTable(c.slice(0,9),!!noRuns),suitTable(c.slice(9,18),!!noRuns),
+           suitTable(c.slice(18,27),!!noRuns),suitTable(c.slice(27,34),true)];
+  let best=8;
+  (function comb(gi,m,p,hp){
+    if(m*3+p*2>14) return;
+    if(gi===4){ let pp=p; const o=m+pp-4; if(o>0) pp-=o; if(pp<0) pp=0;
+      const s=8-2*m-pp-(hp?1:0); if(s<best) best=s; return; }
+    const t=g[gi]; for(let k=0;k<t.length;k++) comb(gi+1,m+t[k][0],p+t[k][1],hp||t[k][2]);
+  })(0,0,0,0);
+  return best;
+}
+function shantenChiitoi(c){
+  let pairs=0,kinds=0;
+  for(let i=0;i<34;i++){ if(c[i]>=2)pairs++; if(c[i]>=1)kinds++; }
+  let ch=6-pairs; if(kinds<7) ch+=7-kinds;
+  return ch;
+}
+const YAO=[0,8,9,17,18,26,27,28,29,30,31,32,33];
+function shantenKokushi(c){
+  let kinds=0,pair=0;
+  YAO.forEach(i=>{ if(c[i]>0) kinds++; if(c[i]>=2) pair=1; });
+  return 13-kinds-pair;
+}
+function shantenHonitsu(c,suit){
+  const d=new Array(34).fill(0);
+  for(let i=0;i<9;i++) d[suit*9+i]=c[suit*9+i];
+  for(let i=27;i<34;i++) d[i]=c[i];
+  return shantenCore(d,false);
+}
+function shanten(c){ return Math.min(shantenCore(c,false), shantenChiitoi(c)); }
+function waits(c){
+  if(shanten(c)!==0) return [];
+  const out=[];
+  for(let i=0;i<34;i++){ if(c[i]>=4) continue; c[i]++; if(shanten(c)===-1) out.push(i); c[i]--; }
+  return out;
+}
+function ukeire(c){
+  const s=shanten(c); const kinds=[]; let total=0;
+  for(let i=0;i<34;i++){ if(c[i]>=4) continue; c[i]++; const ns=shanten(c); c[i]--;
+    if(ns<s){ kinds.push(i); total+=4-c[i]; } }
+  return {shanten:s,kinds:kinds,total:total};
+}
+function discardOptions(c){
+  const res=[];
+  for(let i=0;i<34;i++){ if(c[i]===0) continue; c[i]--; const u=ukeire(c); c[i]++;
+    res.push({tile:i,shanten:u.shanten,total:u.total,kinds:u.kinds}); }
+  res.sort((a,b)=>a.shanten-b.shanten||b.total-a.total);
+  return res;
+}
+
+/* ---- 手牌の組み立て ---- */
+function addSet(c){
+  for(let t=0;t<60;t++){
+    if(R(6)===0){ const i=R(34); if(c[i]<=1){ c[i]+=3; return true; } }
+    else { const s=R(3), n=R(7), i=s*9+n;
+      if(c[i]<4&&c[i+1]<4&&c[i+2]<4){ c[i]++;c[i+1]++;c[i+2]++; return true; } }
+  }
+  return false;
+}
+function addPattern(c,pat){
+  const mx=Math.max.apply(null,pat);
+  for(let t=0;t<60;t++){
+    const s=R(3), base=R(9-mx), idx=pat.map(o=>s*9+base+o);
+    let ok=true;
+    idx.forEach(i=>{ const k=idx.filter(x=>x===i).length; if(c[i]+k>4) ok=false; });
+    if(ok){ idx.forEach(i=>c[i]++); return true; }
+  }
+  return false;
+}
+function addPairT(c){ for(let t=0;t<60;t++){ const i=R(34); if(c[i]<=2){ c[i]+=2; return true; } } return false; }
+function addFloat(c){ for(let t=0;t<40;t++){ const i=R(10)<8?R(27):27+R(7); if(c[i]===0){ c[i]++; return true; } } return false; }
+
+const T4=[[0,1,2,3],[0,1,2,2],[0,0,1,2],[0,0,0,1],[0,1,1,2],[0,0,1,1]];
+const T5=[[0,1,2,3,4],[0,0,0,1,2],[0,1,2,3,3],[0,0,1,2,2]];
+const T7=[[0,1,2,3,4,5,6],[0,0,0,1,2,3,4],[0,1,2,2,3,4,5]];
+
+/* ---- 出題1: 待ち読み ---- */
+function genWait(){
+  for(let tr=0;tr<400;tr++){
+    const c=new Array(34).fill(0); let ok=true; const mode=R(10);
+    if(mode<4){ for(let k=0;k<3;k++) ok=ok&&addSet(c); ok=ok&&addPattern(c,pk(T4)); }
+    else if(mode<7){ for(let k=0;k<2;k++) ok=ok&&addSet(c); ok=ok&&addPattern(c,pk(T5))&&addPairT(c); }
+    else if(mode<9){ for(let k=0;k<2;k++) ok=ok&&addSet(c); ok=ok&&addPattern(c,pk(T7)); }
+    else { for(let k=0;k<4;k++) ok=ok&&addSet(c);
+      if(ok){ for(let t=0;t<60;t++){ const i=R(34); if(c[i]<4){ c[i]++; break; } } } }
+    if(!ok) continue;
+    let n=0; for(let i=0;i<34;i++) n+=c[i];
+    if(n!==13||shanten(c)!==0) continue;
+    const w=waits(c); if(!w.length) continue;
+    const same = w.every(i=>i<27) ? Math.floor(w[0]/9) : -1;
+    const cand=[], key=a=>a.join(",");
+    const push=a=>{ if(!a.length||a.length>5) return; if(key(a)===key(w)) return;
+      if(same>=0 && !a.every(i=>i<27&&Math.floor(i/9)===same)) return;
+      if(!cand.some(x=>key(x)===key(a))) cand.push(a); };
+    if(w.length>1){ push(w.slice(0,-1)); push(w.slice(1)); }
+    [-1,1].forEach(d=>{ const sh=w.map(i=>i+d);
+      if(sh.every(i=>i>=0&&i<27&&Math.floor(i/9)===Math.floor((i-d)/9))) push(sh); });
+    w.forEach(i=>[i-3,i+3,i-1,i+1].forEach(j=>{
+      if(j<0||j>33||w.indexOf(j)>=0) return;
+      if(j<27&&Math.floor(j/9)!==Math.floor(i/9)) return;
+      push(w.concat([j]).sort((a,b)=>a-b)); }));
+    if(cand.length<3) continue;
+    const wrong=[]; while(wrong.length<3&&cand.length) wrong.push(cand.splice(R(cand.length),1)[0]);
+    const opts=[w].concat(wrong);
+    for(let i=opts.length-1;i>0;i--){ const j=R(i+1); const t=opts[i]; opts[i]=opts[j]; opts[j]=t; }
+    let total=0; w.forEach(i=>total+=4-c[i]);
+    const tip = w.length===1 ? "待ちが1種類しかない形。変えられるなら両面に受け替えたい。"
+      : w.length===2 ? "2種類。両面なら8枚だがシャンポンなら4枚しかない。枚数まで数える。"
+      : "3種類以上の多面張。見落としやすいので、リーチの前に必ず数え直す。";
+    return { kind:"wait", hand:toTiles(c), q:"待ちは？",
+      choices:opts.map(o=>o.map(i=>TN[i]).join("・")),
+      answer:opts.map(key).indexOf(key(w)),
+      why:"待ちは"+w.map(i=>TN[i]+"（残り"+(4-c[i])+"枚）").join("、")+"の"+w.length+"種"+total+"枚。"+tip };
+  }
+  return null;
+}
+
+/* ---- 出題2: 1シャンテンの牌効率 ---- */
+const ISHAPES=[
+  [[0,1,2,3]],            /* 四連形 */
+  [[0,1,1,2]],            /* 中ぶくれ */
+  [[0,1,2],[0,2]],        /* 面子＋そばの浮き牌 */
+  [[0,2,4]],              /* リャンカン */
+  [[0,1],[0,1]],          /* 両面2つ */
+  [[0,1],[0,2]],          /* 両面＋カンチャン */
+  [[0,0],[0,1]],          /* 対子＋両面 */
+  [[0,2,3,4,4,5]],        /* リャンメンカンチャン 245667 */
+  [[0,0,2,2,4,4]],        /* サンドイッチ形 446688 */
+  [[0,0,2,4]],            /* 三枚1ブロック 4468 */
+  [[0,1,2,3],[0,1]],      /* 四連形＋両面 */
+  [[0,1,1,2],[0,1]]       /* 中ぶくれ＋両面 */
+];
+function genEff(){
+  for(let tr=0;tr<400;tr++){
+    const c=new Array(34).fill(0); let ok=true;
+    const sets=1+R(2);
+    for(let k=0;k<sets&&ok;k++) ok=addSet(c);
+    pk(ISHAPES).forEach(pat=>{ if(ok) ok=addPattern(c,pat); });
+    if(ok&&R(3)>0) ok=addPairT(c);
+    let guard=0, n=0;
+    const cnt=()=>{ let x=0; for(let i=0;i<34;i++) x+=c[i]; return x; };
+    while(ok&&cnt()<14&&guard++<40){
+      if(cnt()<=11&&R(2)===0) { if(!addPattern(c,pk([[0,1],[0,2],[0,0]]))) break; }
+      else if(!addFloat(c)) break;
+    }
+    if(!ok||cnt()!==14) continue;
+    if(shanten(c)!==1) continue;
+    const opts=discardOptions(c);
+    const keep=opts.filter(o=>o.shanten===1), back=opts.filter(o=>o.shanten===2);
+    if(keep.length<2) continue;
+
+    if(back.length>=1 && R(2)===0){
+      /* 形B: シャンテン戻しを避ける */
+      if(keep[0].total-keep[1].total<3) continue;
+      const rest=keep.slice(1), wrong=[];
+      while(wrong.length<2&&rest.length) wrong.push(rest.splice(R(rest.length),1)[0]);
+      if(wrong.length<2) continue;
+      const bad=back[R(Math.min(back.length,5))];
+      const four=[keep[0]].concat(wrong,[bad]);
+      for(let i=four.length-1;i>0;i--){ const j=R(i+1); const t=four[i]; four[i]=four[j]; four[j]=t; }
+      return { kind:"eff", hand:toTiles(c),
+        q:"1シャンテンです。シャンテン数を戻さずに、受け入れが最も広いのはどれ？",
+        choices:four.map(o=>"打"+TN[o.tile]),
+        answer:four.map(o=>o.tile).indexOf(keep[0].tile),
+        why:four.map(o=>"打"+TN[o.tile]+"："+(o.shanten===2?"<b>2シャンテンに戻る</b>":
+          "1シャンテン維持　<b>"+o.kinds.length+"種"+o.total+"枚</b>")+
+          (o.shanten===1?"　"+o.kinds.map(i=>TN[i]).join("・"):"")).join("<br>")+
+        "<br>シャンテン戻しは、打点や待ちが大きく良くなるとき以外はしない。1シャンテンからの1打は、そのままアガリ率に効く。" };
+    }
+    /* 形A: 受け入れ最大 */
+    if(keep.length<4||keep[0].total-keep[1].total<4) continue;
+    const rest=keep.slice(1), wrong=[];
+    while(wrong.length<3&&rest.length) wrong.push(rest.splice(R(rest.length),1)[0]);
+    if(wrong.length<3) continue;
+    const four=[keep[0]].concat(wrong);
+    for(let i=four.length-1;i>0;i--){ const j=R(i+1); const t=four[i]; four[i]=four[j]; four[j]=t; }
+    return { kind:"eff", hand:toTiles(c),
+      q:"1シャンテンです。切ったあとテンパイ受け入れが最も広いのはどれ？（どれも1シャンテン維持）",
+      choices:four.map(o=>"打"+TN[o.tile]),
+      answer:four.map(o=>o.tile).indexOf(keep[0].tile),
+      why:four.map(o=>"打"+TN[o.tile]+"：<b>"+o.kinds.length+"種"+o.total+"枚</b>　"+
+        o.kinds.map(i=>TN[i]).join("・")).join("<br>")+
+      "<br>1シャンテンでの1打はテンパイ率に直結する。ブロックが足りているなら、受け入れの広い形を残す。" };
+  }
+  return null;
+}
+
+/* ---- 出題4: 残り枚数とアガりやすさ ---- */
+function buildSeen(c13, waitLists){
+  const seen=new Array(34).fill(0);
+  waitLists.forEach(w=>w.forEach(i=>{
+    const room=4-c13[i]-seen[i];
+    if(room>0 && R(3)>0) seen[i]+=R(room+1);
+  }));
+  let extra=10+R(10);
+  for(let t=0;t<300&&extra>0;t++){ const i=R(34); if(c13[i]+seen[i]<4){ seen[i]++; extra--; } }
+  return seen;
+}
+function remainOf(w,c13,seen){ let n=0; w.forEach(i=>n+=4-c13[i]-seen[i]); return n; }
+
+function genCount(){
+  for(let tr=0;tr<400;tr++){
+    if(R(2)===0){
+      /* 形A: テンパイの取り方を選ぶ */
+      const c=new Array(34).fill(0); let ok=true; const md=R(3);
+      if(md===0){ for(let k=0;k<3;k++) ok=ok&&addSet(c);
+        ok=ok&&addPairT(c)&&addPattern(c,pk([[0,1,3],[0,2,3],[0,0,1],[0,1,4]])); }
+      else if(md===1){ for(let k=0;k<3;k++) ok=ok&&addSet(c);
+        ok=ok&&addPairT(c)&&addPairT(c)&&addFloat(c); }
+      else { for(let k=0;k<4;k++) ok=ok&&addSet(c);
+        ok=ok&&addPattern(c,pk([[0,1],[0,3],[0,0]])); }
+      if(!ok) continue;
+      let n=0; for(let i=0;i<34;i++) n+=c[i]; if(n!==14) continue;
+      const tp=discardOptions(c).filter(o=>o.shanten===0);
+      if(tp.length<3) continue;
+      const uq=[];
+      tp.forEach(o=>{
+        c[o.tile]--; const w=waits(c); c[o.tile]++;
+        if(!w.length) return;
+        if(w.indexOf(o.tile)>=0) return;                 /* フリテンは除外 */
+        if(uq.some(y=>y.w.join(",")===w.join(","))) return;
+        uq.push({tile:o.tile,w:w});
+      });
+      if(uq.length<3) continue;
+      const seen=buildSeen(c, uq.map(x=>x.w));
+      uq.forEach(x=>{
+        const h=c.slice(); h[x.tile]--;
+        x.rem=remainOf(x.w,h,seen);
+      });
+      if(uq.some(x=>x.rem<0)) continue;
+      uq.sort((a,b)=>b.rem-a.rem);
+      if(uq[0].rem-uq[1].rem<2) continue;
+      if(uq[0].rem===0) continue;
+      const four=uq.slice(0,4);
+      for(let i=four.length-1;i>0;i--){ const j=R(i+1); const t=four[i]; four[i]=four[j]; four[j]=t; }
+      return { kind:"count", hand:toTiles(c),
+        seenTiles:toTiles(seen), seenLabel:"場に見えている牌（河・副露・ドラ表示）",
+        q:"どの切り方でテンパイを取る？（アガリ牌が最も多く残るもの）",
+        choices:four.map(o=>"打"+TN[o.tile]),
+        answer:four.map(o=>o.tile).indexOf(uq[0].tile),
+        why:four.map(o=>"打"+TN[o.tile]+"　待ち "+o.w.map(i=>TN[i]).join("・")+
+              "　→ 残り<b>"+o.rem+"枚</b>").join("<br>")+
+          "<br>待ちの種類が多くても、その牌が場に出ていれば意味がない。テンパイの取り方を選ぶときは、形ではなく残り枚数で比べる。" };
+    } else {
+      /* 形B: 残り枚数を数える */
+      const g=genWait(); if(!g) continue;
+      const c=new Array(34).fill(0); g.hand.forEach(t=>c[TN.indexOf(t)]++);
+      const w=waits(c); if(!w.length) continue;
+      const seen=buildSeen(c,[w]);
+      const rem=remainOf(w,c,seen);
+      if(rem<0) continue;
+      const set={}; const opts=[rem]; set[rem]=1;
+      [-3,-2,-1,1,2,3].forEach(d=>{ const v=rem+d; if(v>=0&&v<=16&&!set[v]&&opts.length<4){ set[v]=1; opts.push(v); } });
+      if(opts.length<4) continue;
+      for(let i=opts.length-1;i>0;i--){ const j=R(i+1); const t=opts[i]; opts[i]=opts[j]; opts[j]=t; }
+      return { kind:"count", hand:g.hand,
+        seenTiles:toTiles(seen), seenLabel:"場に見えている牌（河・副露・ドラ表示）",
+        q:"待ち牌は、まだ何枚見えていない？",
+        choices:opts.map(v=>v+"枚"),
+        answer:opts.indexOf(rem),
+        why:"待ちは"+w.map(i=>TN[i]).join("・")+"。"+
+          w.map(i=>TN[i]+"＝4枚 − 手牌"+c[i]+"枚 − 場に"+seen[i]+"枚 ＝ 残り"+(4-c[i]-seen[i])+"枚").join("<br>")+
+          "<br>合計<b>"+rem+"枚</b>。厳密には他家の手の内も含むが、判断はこの数字で行う。" };
+    }
+  }
+  return null;
+}
+
+
+/* ---- 出題5: 方針判断 ---- */
+const SUITNM=["萬子","筒子","索子"];
+function planFacts(c){
+  let pairs=0, yaoKinds=0, honorPairs=0;
+  for(let i=0;i<34;i++) if(c[i]>=2) pairs++;
+  YAO.forEach(i=>{ if(c[i]>0) yaoKinds++; });
+  for(let i=27;i<34;i++) if(c[i]>=2) honorPairs++;
+  let ponnable=0;
+  for(let i=27;i<34;i++) if(c[i]>=2) ponnable++;
+  [0,8,9,17,18,26].forEach(i=>{ if(c[i]>=2) ponnable++; });
+  let honors=0; for(let i=27;i<34;i++) honors+=c[i];
+  const suitCnt=[0,1,2].map(s=>{ let n=0; for(let i=0;i<9;i++) n+=c[s*9+i]; return n+honors; });
+  const stdS=shantenCore(c,false), chiS=shantenChiitoi(c),
+        toiS=shantenCore(c,true), kokS=shantenKokushi(c);
+  const honS=[0,1,2].map(s=>shantenHonitsu(c,s));
+  let bestSuit=0; for(let s=1;s<3;s++) if(honS[s]<honS[bestSuit]||(honS[s]===honS[bestSuit]&&suitCnt[s]>suitCnt[bestSuit])) bestSuit=s;
+  return {pairs:pairs,yaoKinds:yaoKinds,honorPairs:honorPairs,ponnable:ponnable,suitCnt:suitCnt,
+          std:stdS,chi:chiS,toi:toiS,kok:kokS,hon:honS,bestSuit:bestSuit};
+}
+function planAnswer(f){
+  if(f.kok<=f.std-1 && f.yaoKinds>=11) return "国士無双";
+  if(f.chi<=f.std-1 && f.pairs>=4) return "七対子";
+  if(f.toi<=f.std && f.pairs>=4 && f.ponnable>=3) return "トイトイ";
+  if(f.hon[f.bestSuit]<=f.std && f.suitCnt[f.bestSuit]>=10) return "混一色（"+SUITNM[f.bestSuit]+"）";
+  if(f.std<=f.chi-1 && f.std<=f.kok-2 && f.hon[f.bestSuit]>=f.std+1) return "面子手";
+  return null;
+}
+function genPlan(){
+  for(let tr=0;tr<600;tr++){
+    const c=new Array(34).fill(0); let n=0;
+    const bias=R(4);
+    if(bias===1){ const k=4+R(3);
+      for(let j=0;j<k;j++){ for(let t=0;t<30;t++){ const i=R(34); if(c[i]===0){ c[i]=2; n+=2; break; } } } }
+    else if(bias===2){ const su=R(3), want=8+R(4);
+      for(let t=0;t<200&&n<want;t++){ const i=(R(10)<8)?su*9+R(9):27+R(7); if(c[i]<4){ c[i]++; n++; } } }
+    else if(bias===3){
+      for(let t=0;t<200&&n<11;t++){ const i=YAO[R(13)]; if(c[i]<(R(4)?1:2)){ c[i]++; n++; } } }
+    for(let t=0;t<300&&n<13;t++){ const i=R(34); if(c[i]<4){ c[i]++; n++; } }
+    if(n!==13) continue;
+    const f=planFacts(c), ans=planAnswer(f);
+    if(!ans) continue;
+    const all=["面子手","七対子","トイトイ","混一色（"+SUITNM[f.bestSuit]+"）","国士無双"];
+    const wrong=all.filter(x=>x!==ans);
+    for(let i=wrong.length-1;i>0;i--){ const j=R(i+1); const t=wrong[i]; wrong[i]=wrong[j]; wrong[j]=t; }
+    const four=[ans].concat(wrong.slice(0,3));
+    for(let i=four.length-1;i>0;i--){ const j=R(i+1); const t=four[i]; four[i]=four[j]; four[j]=t; }
+    const rows=[
+      ["面子手（普通に進める）",f.std],["七対子",f.chi],["トイトイ",f.toi],
+      ["混一色（"+SUITNM[f.bestSuit]+"）",f.hon[f.bestSuit]],["国士無双",f.kok]
+    ];
+    const mn=Math.min(f.std,f.chi,f.toi,f.kok);
+    return { kind:"plan", hand:toTiles(c), handLabel:"配牌〜序盤の13枚",
+      q:"この手はどこを目指す？",
+      choices:four, answer:four.indexOf(ans),
+      why:"<b>各ルートのシャンテン数</b><br>"+
+        rows.map(r=>r[0]+"：<b>"+r[1]+"</b>"+(r[1]===mn?"　←最短":"")).join("<br>")+
+        "<br><br><b>手牌の特徴</b><br>対子"+f.pairs+"個（うち字牌"+f.honorPairs+"）／幺九牌"+f.yaoKinds+"種／"+
+        SUITNM[f.bestSuit]+"＋字牌"+f.suitCnt[f.bestSuit]+"枚／鳴ける対子"+f.ponnable+"個<br><br>"+
+        "判定基準：国士は幺九11種以上かつ最短、七対子とトイトイは対子4つ以上かつ面子手より1つ以上近いとき、"+
+        "混一は同色＋字牌10枚以上でシャンテンが落ちないとき、それ以外は面子手。" };
+  }
+  return null;
+}
+
+/* ---- 出題3: 守備 ---- */
+function genDef(){
+  for(let tr=0;tr<200;tr++){
+    const seen=new Array(34).fill(0), river=[];
+    const rlen=9+R(6);
+    for(let k=0;k<rlen;k++){ for(let t=0;t<40;t++){ const i=R(34);
+      if(seen[i]<3&&river.indexOf(i)<0){ river.push(i); seen[i]++; break; } } }
+    const riichiAt=4+R(Math.max(1,river.length-6));
+    const rset={}; river.forEach(i=>rset[i]=1);
+    const myHand=[];
+    if(R(2)===0){ for(let t=0;t<40;t++){ const s=R(3), n=1+R(7), i=s*9+n;
+      if(seen[i]===0){ for(let k=0;k<4;k++){ myHand.push(i); seen[i]++; } break; } } }
+    const danger=idx=>{
+      if(rset[idx]) return {s:0,label:"現物",note:"リーチ者の河にある。フリテンで絶対に当たらない"};
+      const remain=4-seen[idx], tf=[0,0.08,0.25,0.55,1.0][remain];
+      if(idx>=27){ const cut=seen[idx];
+        return {s:1.5*tf,label:cut===0?"生牌の字牌":cut+"枚切れの字牌",
+          note:cut===0?"当たるのは単騎かシャンポンのみ":"残り"+remain+"枚。シャンポンになりにくい"}; }
+      const suit=Math.floor(idx/9), n=idx%9+1, sfx="mps"[suit];
+      const alive=k=>k>=1&&k<=9&&seen[suit*9+k-1]<4;
+      const inR=k=>k>=1&&k<=9&&!!rset[suit*9+k-1];
+      let r=0,bw=0,bs=0; const sn=[];
+      if(n>=4){ if(!alive(n-2)||!alive(n-1)) bw++; else if(inR(n-3)){ bs++; sn.push(n-3); } else r++; }
+      if(n<=6){ if(!alive(n+1)||!alive(n+2)) bw++; else if(inR(n+3)){ bs++; sn.push(n+3); } else r++; }
+      const kan=(n>=2&&n<=8&&alive(n-1)&&alive(n+1))?1:0;
+      const pen=((n===3&&alive(1)&&alive(2))||(n===7&&alive(8)&&alive(9)))?1:0;
+      const s=3.0*r+1.1*kan+0.4*pen+1.5*tf;
+      let label="無筋",note="";
+      if(r===0&&bw>0&&bs===0){ label="ノーチャンス"; note="隣の牌が4枚見えていて両面が作れない"; }
+      else if(r===0&&bs>0){ label="スジ"; note=sn.map(k=>k+sfx).join("と")+"が河にあり両面待ちが成立しない"; }
+      else if(bs>0||bw>0){ label="片スジ"; note="片側の両面だけが消えている"; }
+      else note=(n>=4&&n<=6)?"両面2種に当たる最も危険な位置":"両面・シャンポン・単騎すべてに当たる";
+      return {s:s,label:label,note:note};
+    };
+    const hide=true, pool=[];
+    for(let i=0;i<34;i++){ if(myHand.indexOf(i)>=0) continue; if(hide&&rset[i]) continue;
+      pool.push({i:i,d:danger(i)}); }
+    pool.sort((a,b)=>a.d.s-b.d.s);
+    const best=pool[0], rest=pool.filter(x=>x.d.s-best.d.s>=1.0);
+    if(rest.length<3) continue;
+    const wrong=[]; while(wrong.length<3&&rest.length) wrong.push(rest.splice(R(Math.min(rest.length,12)),1)[0]);
+    if(wrong.length<3) continue;
+    const four=[best].concat(wrong);
+    for(let i=four.length-1;i>0;i--){ const j=R(i+1); const t=four[i]; four[i]=four[j]; four[j]=t; }
+    return { kind:"def", river:{t:river.map(i=>TN[i]),riichi:riichiAt},
+      hand:myHand.map(i=>TN[i]), handLabel:"自分の手牌（一部）",
+      q:"この中で最も安全なのはどれ？",
+      choices:four.map(o=>TN[o.i]),
+      answer:four.map(o=>o.i).indexOf(best.i),
+      why:four.map(o=>"<b>"+TN[o.i]+"</b>："+o.d.label+"　"+o.d.note).join("<br>")
+        +"<br>現物は選択肢に入れていないので、スジ・壁・字牌の切れ枚数だけで比べる。" };
+  }
+  return null;
+}
+
+/* ===================== state ===================== */
+const KEY = "mahjong-trainer/attempts";
+let S = {
+  tab:"diagnose",
+  qi:0, picked:null, answers:[], done:false,
+  dcat:CATS[0], didx:0, dpicked:null,
+  gmode:"wait", gq:null, gpicked:null, gn:0, gok:0,
+  history:load()
+};
+
+function load(){
+  try{ return JSON.parse(localStorage.getItem(KEY)) || []; }catch(e){ return []; }
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S.history)); }catch(e){}
+}
+
+/* ===================== helpers ===================== */
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+function tileHTML(t){
+  const honors = "東南西北白發中";
+  if(honors.indexOf(t) >= 0){
+    const cls = t==="中" ? "redc" : t==="發" ? "s3" : "z";
+    return '<div class="tile"><span class="z '+cls+'">'+t+'</span></div>';
+  }
+  const suit = t[1], red = t[0]==="0";
+  const num = red ? "5" : t[0];
+  const mark = suit==="m" ? "萬" : suit==="p" ? "筒" : "索";
+  const cls = red ? "redc" : suit==="m" ? "m" : suit==="p" ? "p" : "s3";
+  return '<div class="tile'+(red?" red":"")+'"><span class="n '+cls+'">'+num+
+         '</span><span class="s '+cls+'">'+mark+'</span></div>';
+}
+function handHTML(tiles, label){
+  if(!tiles || !tiles.length) return "";
+  const honors = "東南西北白發中";
+  const groups = [];
+  tiles.forEach(t=>{
+    const s = honors.indexOf(t)>=0 ? "z" : t[1];
+    const last = groups[groups.length-1];
+    if(last && last.s===s) last.items.push(t); else groups.push({s:s, items:[t]});
+  });
+  const body = groups.map(g =>
+    '<div class="grp">' + g.items.map(tileHTML).join("") + '</div>').join("");
+  return '<div class="hand" style="display:block">'+
+    (label ? '<div class="lbl">'+label+'</div>' : '')+
+    '<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px 12px">'+body+'</div></div>';
+}
+
+function riverHTML(r){
+  if(!r) return "";
+  return '<div class="river"><div class="lbl">リーチ者の河（左上から順）</div><div class="rrow">'+
+    r.t.map(function(t,i){
+      return i===r.riichi ? '<span class="rot">'+tileHTML(t)+'</span>' : tileHTML(t);
+    }).join("")+
+    '</div><div class="rnote">横向きの牌＝リーチ宣言牌</div></div>';
+}
+
+function levelOf(pct){
+  if(pct>=90) return ["上級手前","判断の型はできている。あとは場況読みと打点設計。"];
+  if(pct>=80) return ["中級上位","本番で大負けする心配は少ない。取りこぼしは押し引きの精度。"];
+  if(pct>=65) return ["中級","基本はできている。守備の徹底だけで着順が1つ上がる。"];
+  if(pct>=50) return ["初級","知識はあるが判断が場当たり。ルール化すれば一気に伸びる。"];
+  return ["入門","ルールは知っている段階。降りる技術から入れば最短で失点が減る。"];
+}
+
+function choicesHTML(q, picked, handler){
+  return '<div class="choices">' + q.choices.map((c,n)=>{
+    let cls = "";
+    if(picked!==null){
+      if(n===q.answer) cls="right"; else if(n===picked) cls="wrong"; else cls="mute";
+    }
+    return '<button class="'+cls+'" onclick="'+handler+'('+n+')">'+
+           '<span class="idx">'+(n+1)+'</span>'+esc(c)+'</button>';
+  }).join("") + '</div>';
+}
+function verdictHTML(q, picked, nextFn, nextLabel){
+  const ok = picked===q.answer;
+  return '<div class="verdict"><div class="head" style="color:'+(ok?"var(--jade)":"var(--vermilion)")+'">'+
+    (ok ? "正解" : "不正解 — 正解は "+(q.answer+1)+". "+esc(q.choices[q.answer])) +
+    '</div><p>'+esc(q.why)+'</p>'+
+    '<button class="next" onclick="'+nextFn+'()">'+nextLabel+'</button></div>';
+}
+
+/* ===================== charts (inline svg) ===================== */
+function radarSVG(vals){
+  const cx=150, cy=132, R=88, N=5;
+  const pt=(i,r)=>{const a=-Math.PI/2 + i*2*Math.PI/N;
+    return [cx+r*Math.cos(a), cy+r*Math.sin(a)];};
+  let g="";
+  [25,50,75,100].forEach(lv=>{
+    const p=[]; for(let i=0;i<N;i++){const q=pt(i,R*lv/100); p.push(q[0].toFixed(1)+","+q[1].toFixed(1));}
+    g+='<polygon points="'+p.join(" ")+'" fill="none" stroke="#D6CCB4" stroke-width="1"/>';
+  });
+  for(let i=0;i<N;i++){const q=pt(i,R);
+    g+='<line x1="'+cx+'" y1="'+cy+'" x2="'+q[0].toFixed(1)+'" y2="'+q[1].toFixed(1)+'" stroke="#D6CCB4"/>';}
+  const p=[]; vals.forEach((v,i)=>{const q=pt(i,R*Math.max(v,2)/100); p.push(q[0].toFixed(1)+","+q[1].toFixed(1));});
+  g+='<polygon points="'+p.join(" ")+'" fill="rgba(196,52,43,.25)" stroke="#C4342B" stroke-width="2"/>';
+  vals.forEach((v,i)=>{const q=pt(i,R*Math.max(v,2)/100);
+    g+='<circle cx="'+q[0].toFixed(1)+'" cy="'+q[1].toFixed(1)+'" r="3" fill="#C4342B"/>';});
+  CATS.forEach((c,i)=>{
+    const q=pt(i,R+22);
+    const anchor = Math.abs(q[0]-cx)<8 ? "middle" : (q[0]>cx ? "start" : "end");
+    g+='<text x="'+q[0].toFixed(1)+'" y="'+(q[1]+4).toFixed(1)+'" font-size="11" fill="#1A2422" text-anchor="'+anchor+'">'+c+'</text>';
+  });
+  return '<svg viewBox="0 0 300 270" width="100%" height="250" role="img" aria-label="分野別スコア">'+g+'</svg>';
+}
+
+function lineSVG(hist){
+  const W=300,H=150,L=28,Rr=10,T=12,B=26, max=Q.length;
+  const n=hist.length;
+  const x=i=> n<=1 ? L+(W-L-Rr)/2 : L+i*(W-L-Rr)/(n-1);
+  const y=v=> T+(H-T-B)*(1-v/max);
+  let g="";
+  [0,max/2,max].forEach(v=>{
+    g+='<line x1="'+L+'" y1="'+y(v).toFixed(1)+'" x2="'+(W-Rr)+'" y2="'+y(v).toFixed(1)+'" stroke="#E5DDCA"/>';
+    g+='<text x="'+(L-6)+'" y="'+(y(v)+3).toFixed(1)+'" font-size="9" fill="#5A6B66" text-anchor="end">'+Math.round(v)+'</text>';
+  });
+  const pts = hist.map((h,i)=>x(i).toFixed(1)+","+y(h.total).toFixed(1));
+  if(n>1) g+='<polyline points="'+pts.join(" ")+'" fill="none" stroke="#C4342B" stroke-width="2"/>';
+  hist.forEach((h,i)=>{
+    g+='<circle cx="'+x(i).toFixed(1)+'" cy="'+y(h.total).toFixed(1)+'" r="3.5" fill="#C4342B"/>';
+    if(i===0||i===n-1||n<=4)
+      g+='<text x="'+x(i).toFixed(1)+'" y="'+(H-8)+'" font-size="8.5" fill="#5A6B66" text-anchor="middle">'+h.date.slice(5)+'</text>';
+  });
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="160" role="img" aria-label="スコア推移">'+g+'</svg>';
+}
+
+/* ===================== views ===================== */
+function viewDiagnose(){
+  if(S.done) return viewResult();
+  const q = Q[S.qi];
+  const okCount = S.answers.filter(a=>a.ok).length;
+  let h = '<div class="progress"><span class="eyebrow">問 '+String(S.qi+1).padStart(2,"0")+
+          ' / '+Q.length+' — '+q.cat+'</span><span class="rule"></span>'+
+          '<span class="cnt">'+okCount+'正解</span></div>';
+  h += '<div class="card"><div class="sub">'+esc(q.scene)+'</div>'+
+       riverHTML(q.river)+
+       handHTML(q.hand, q.river ? "自分の手牌" : "")+
+       '<p class="q">'+esc(q.q)+'</p>'+
+       choicesHTML(q, S.picked, "pick");
+  if(S.picked!==null)
+    h += verdictHTML(q, S.picked, "nextQ", S.qi+1>=Q.length ? "結果を見る" : "次の問題へ");
+  h += '</div>';
+  return h;
+}
+
+function pick(n){ if(S.picked===null){ S.picked=n; render(); } }
+
+function nextQ(){
+  const q = Q[S.qi];
+  S.answers.push({cat:q.cat, ok:S.picked===q.answer});
+  S.picked=null;
+  if(S.qi+1>=Q.length){
+    S.done=true;
+    const byCat={};
+    CATS.forEach(c=>{
+      const xs=S.answers.filter(a=>a.cat===c);
+      byCat[c]=Math.round(xs.filter(a=>a.ok).length/xs.length*100);
+    });
+    S.history.push({date:new Date().toISOString().slice(0,10),
+                    total:S.answers.filter(a=>a.ok).length, byCat:byCat});
+    S.history = S.history.slice(-30);
+    save();
+  } else S.qi++;
+  render();
+}
+
+function restart(){ S.qi=0;S.picked=null;S.answers=[];S.done=false;render();
+  window.scrollTo({top:0,behavior:"instant"}); }
+
+function viewResult(){
+  const per = CATS.map(c=>{
+    const xs=S.answers.filter(a=>a.cat===c);
+    return {cat:c, ok:xs.filter(a=>a.ok).length, n:xs.length,
+            pct:Math.round(xs.filter(a=>a.ok).length/xs.length*100)};
+  });
+  const total=S.answers.filter(a=>a.ok).length;
+  const pct=Math.round(total/S.answers.length*100);
+  const lv=levelOf(pct);
+  const weak=per.slice().sort((a,b)=>a.pct-b.pct).slice(0,2);
+
+  let h='<div class="card"><div class="eyebrow">診断結果</div>'+
+    '<div class="score"><span class="big">'+total+'</span><span class="of">/ '+S.answers.length+
+    '</span><span class="lv">'+lv[0]+'</span></div>'+
+    '<p style="margin:8px 0 0;font-size:14px;color:#33403C">'+lv[1]+'</p></div>';
+
+  h+='<div class="card tight">'+radarSVG(per.map(p=>p.pct))+'<div class="bars">'+
+     per.map(p=>'<div class="bar"><span class="nm">'+p.cat+'</span>'+
+       '<span class="track"><span class="fill" style="width:'+p.pct+'%;background:'+
+       (p.pct>=70?"var(--jade)":"var(--vermilion)")+'"></span></span>'+
+       '<span class="num">'+p.ok+'/'+p.n+'</span></div>').join("")+'</div></div>';
+
+  h+='<div class="card"><div class="eyebrow">優先して潰すべき2つ</div>'+
+     weak.map(w=>'<div class="weak" style="margin-top:12px"><h4>'+w.cat+'（'+w.ok+'/'+w.n+'）</h4>'+
+       '<p>'+CAT_NOTE[w.cat]+'</p><p><span class="k">やること：</span>'+RX[w.cat].drill+'</p></div>').join("")+
+     '<button class="ghost" onclick="restart()">もう一度診断する</button></div>';
+  return h;
+}
+
+function viewDrill(){
+  const list = ALL.filter(q=>q.cat===S.dcat);
+  const q = list[S.didx % list.length];
+  let h='<nav style="margin:0 0 16px">'+CATS.map(c=>
+    '<button class="'+(c===S.dcat?"on":"")+'" onclick="setCat(\''+c+'\')" '+
+    'style="'+(c===S.dcat?"background:var(--brass);color:var(--feltDeep);border-color:var(--brass)":"")+
+    ';font-size:12.5px;padding:5px 10px">'+c+'（'+ALL.filter(x=>x.cat===c).length+'）</button>').join("")+'</nav>';
+  h+='<div class="note"><span class="k">この分野の要点：</span>'+CAT_NOTE[S.dcat]+'<br>'+
+     '<span class="k">覚えるルール：</span>'+RX[S.dcat].rule+
+     '<div style="margin-top:8px;color:#8FA9A3">全'+ALL.length+'問（診断'+Q.length+'問＋ドリル専用'+EXTRA.length+'問）。診断の25問は伸びを測るものさしなので入れ替えていません。</div></div>';
+  h+='<div class="card"><div class="sub" style="display:flex;justify-content:space-between">'+
+     '<span>'+esc(q.scene)+'</span><span style="font-family:var(--mono)">'+
+     ((S.didx%list.length)+1)+'/'+list.length+'</span></div>'+
+     riverHTML(q.river)+
+     handHTML(q.hand, q.river ? "自分の手牌" : "")+
+     '<p class="q">'+esc(q.q)+'</p>'+choicesHTML(q,S.dpicked,"dpick");
+  if(S.dpicked!==null) h+=verdictHTML(q,S.dpicked,"dnext","次へ");
+  h+='</div>';
+  return h;
+}
+function setCat(c){ S.dcat=c;S.didx=0;S.dpicked=null;render(); }
+function dpick(n){ if(S.dpicked===null){S.dpicked=n;render();} }
+function dnext(){ S.dpicked=null;S.didx++;render();window.scrollTo({top:0,behavior:"instant"}); }
+
+function viewPlan(){
+  const last = S.history.length ? S.history[S.history.length-1] : null;
+  const weak = last
+    ? Object.keys(last.byCat).sort((a,b)=>last.byCat[a]-last.byCat[b]).slice(0,2)
+    : ["守備","押し引き"];
+  let h='<div class="note">'+
+    (last ? '直近の診断（'+last.date+'・'+last.total+'/'+Q.length+'）から、<span class="k">'+
+            weak.join("と")+'</span>を重点に組んでいます。'
+          : 'まだ診断結果がありません。先に実力診断を受けると、弱い分野が重点項目として差し込まれます。')+
+    '<div style="margin-top:8px;color:#8FA9A3">週の順番は「失点を止める → 手を作る → 押し引き → 通し」。守備を先にするのは、伸びが一番早く、本番で効くからです。</div></div>';
+  h += WEEKS.map(w=>
+    '<div class="card"><div class="week"><span class="no">'+String(w.n).padStart(2,"0")+
+    '</span><div><div class="lab">'+w.lab+'</div><div class="ttl">'+w.ttl+'</div></div></div>'+
+    '<ul class="items">'+
+      w.core.map(t=>'<li><span class="d">—</span><span>'+t+'</span></li>').join("")+
+      weak.map(c=>'<li class="focus"><span class="d">重点</span><span><b>'+c+'</b>：'+RX[c].drill+'</span></li>').join("")+
+    '</ul></div>').join("");
+  return h;
+}
+
+function viewSheet(){
+  let h='<div class="card"><div class="eyebrow">ベタオリの手順</div><ol class="steps">'+
+    '<li>降りると決める（迷いながら押すのが一番損をする）。</li>'+
+    '<li>手牌の安全牌を数え、残り巡目に足りるか確認する。</li>'+
+    '<li>足りるなら安全な順に切って終わり。足りないなら、早い段階で危険度の低い牌を選んで切っておく。</li>'+
+    '<li>誰かが押している牌をよく見る。他家が切って通った牌はそのリーチ者に対して安全。</li></ol></div>';
+
+  h+='<div class="card"><div class="eyebrow">危険度の順序（安全 → 危険）</div>'+
+    DANGER.map((d,i)=>{
+      const r=Math.round(47+(196-47)*i/8), g=Math.round(143-(143-52)*i/8), b=Math.round(109-(109-43)*i/8);
+      return '<div class="danger"><span class="sw" style="background:rgb('+r+','+g+','+b+')"></span>'+
+        '<span><span class="t">'+d[0]+' <span>— '+d[1]+'</span></span>'+
+        '<div class="d">'+d[2]+'</div></span></div>';
+    }).join("")+'</div>';
+
+  h+='<div class="card"><div class="eyebrow">赤ドラありで変わること</div>'+
+    '<div class="hand" style="margin:12px 0;display:flex;gap:2px">'+["0m","0p","0s"].map(tileHTML).join("")+'</div>'+
+    '<ul class="plain">'+
+    '<li>— 赤5は1枚1翻。ただし役ではないので、役が1つ必要（リーチ／タンヤオ／役牌）。</li>'+
+    '<li>— 赤5は浮いていても切らない。5は両面2種に育つうえ、使えれば無条件で1翻。</li>'+
+    '<li>— 赤を引いたら「リーチか、鳴きタンヤオか、役牌か」を早めに決める。</li>'+
+    '<li>— 鳴いても打点が足りるので、赤＋タンヤオの鳴きは積極的に取る。</li>'+
+    '<li>— 相手の打点も1翻ぶん上がる。押すときは強く、降りるときは早く徹底する。中途半端が一番損。</li>'+
+    '<li>— 赤2枚以上を持ったら、愚形テンパイでもリーチして押してよい。</li>'+
+    '</ul></div>';
+
+  h+='<div class="card"><div class="eyebrow">覚えておく形</div><p style="margin:8px 0 4px;font-size:13px;color:#5A6B66;line-height:1.7">数字はすべてエンジンで計算した実測値。同じ手牌から他の牌を切った場合との比較です。</p>'+
+    '<div style="border-top:1px solid #E5DDCA;padding:12px 0 4px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:14px;font-weight:700">四連形</span><span style="font-size:11.5px;color:var(--vermilion)">崩さない</span></div>'+handHTML(["3p","4p","5p","6p"],"")+'<div style="font-size:13px;color:#33403C;line-height:1.75">この4枚を残すと受け入れ12種41枚。3pか6pを切ると7種24枚まで落ちる。面子1つ＋浮き牌に見えるが、実質2ブロック分の働きをする。</div></div>'
+    +'<div style="border-top:1px solid #E5DDCA;padding:12px 0 4px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:14px;font-weight:700">中ぶくれ</span><span style="font-size:11.5px;color:var(--vermilion)">崩さない</span></div>'+handHTML(["3p","4p","4p","5p"],"")+'<div style="font-size:13px;color:#33403C;line-height:1.75">残して9種29枚、4pを切ると7種24枚。余った4pは34mと56m相当の両面2種に育つため、ただの浮き牌より価値が高い。</div></div>'
+    +'<div style="border-top:1px solid #E5DDCA;padding:12px 0 4px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:14px;font-weight:700">面子のそば</span><span style="font-size:11.5px;color:var(--vermilion)">6pを残す</span></div>'+handHTML(["2p","3p","4p","6p"],"")+'<div style="font-size:13px;color:#33403C;line-height:1.75">残して10種35枚、6pを切ると7種24枚。面子の隣の孤立牌は、引きによって三面張になりやすい。</div></div>'
+    +'<div style="border-top:1px solid #E5DDCA;padding:12px 0 4px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:14px;font-weight:700">リャンメンカンチャン</span><span style="font-size:11.5px;color:var(--vermilion)">崩さない</span></div>'+handHTML(["2p","4p","5p","6p","6p","7p"],"")+'<div style="font-size:13px;color:#33403C;line-height:1.75">この6枚に手をつけず浮き牌から切ると16種54枚。2pを切ると12種42枚に落ちる。ただしブロックが足りている場面では2pを切ってテンパイに取るのが正解になるので、ブロック数を数えてから判断する。</div></div>'
+    +'<div style="border-top:1px solid #E5DDCA;padding:12px 0 4px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:14px;font-weight:700">サンドイッチ形</span><span style="font-size:11.5px;color:var(--vermilion)">真ん中の6pを切る</span></div>'+handHTML(["4p","4p","6p","6p","8p","8p"],"")+'<div style="font-size:13px;color:#33403C;line-height:1.75">6p切りで5種16枚、端の4pや8pを切ると4種12枚。44と88が独立した対子として残り、雀頭とシャンポンを兼ねられる。雀頭が別にある場合は枚数が並ぶので、差が出るのは雀頭がないとき。</div></div>'
+    +'<div style="border-top:1px solid #E5DDCA;padding:12px 0 4px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:14px;font-weight:700">三枚1ブロック</span><span style="font-size:11.5px;color:var(--vermilion)">8pを切って446にする</span></div>'+handHTML(["4p","4p","6p","8p"],"")+'<div style="font-size:13px;color:#33403C;line-height:1.75">8p切りが5種16枚、4p切りが4種16枚。枚数は同じで種類が1つ多い差。44が残るので雀頭が確保できるぶん扱いやすい。</div></div>'
+  +'<p style="margin:12px 0 0;font-size:12.5px;color:#5A6B66;line-height:1.7">※完全イーシャンテンは、動画で使われている厳密な定義を再現できませんでした。実測では「両面2つ＋雀頭のみ」は4種16枚と意外に狭く、雀頭が刻子にもなる形（両面2つ＋対子2つ）で6種20枚に広がります。受け入れの種類が増えるのは、雀頭が2つ目の受けを持つときです。</p></div>';
+  h+='<div class="card"><div class="eyebrow">方針の決め方</div>'+
+    '<p style="margin:8px 0 4px;font-size:13px;color:#5A6B66;line-height:1.7">配牌から5巡目までに決める。それ以降の方針変更は基本しない。迷ったら面子手。</p>'+
+    '<div style="border-top:1px solid #E5DDCA;padding:10px 0"><div style="font-size:13.5px;font-weight:700">国士無双</div>'+
+    '<div style="font-size:12.5px;color:var(--vermilion)">幺九牌が11種以上</div>'+
+    '<div style="font-size:13px;color:#33403C;line-height:1.7">10種でも序盤なら検討。字牌の対子が1つあれば理想。一度向かったら戻らない。中途半端が一番損をする。</div></div>'+
+    '<div style="border-top:1px solid #E5DDCA;padding:10px 0"><div style="font-size:13.5px;font-weight:700">七対子</div>'+
+    '<div style="font-size:12.5px;color:var(--vermilion)">対子4つ以上、かつ面子手より近い</div>'+
+    '<div style="font-size:13px;color:#33403C;line-height:1.7">ドラ対子や字牌対子があると強い。孤立した中張牌ばかりの対子は苦しい。単騎待ちなので、待ち替えできるのが利点。</div></div>'+
+    '<div style="border-top:1px solid #E5DDCA;padding:10px 0"><div style="font-size:13.5px;font-weight:700">トイトイ</div>'+
+    '<div style="font-size:12.5px;color:var(--vermilion)">対子4つ以上で、鳴ける対子（字牌・端牌）が3つ以上</div>'+
+    '<div style="font-size:13px;color:#33403C;line-height:1.7">トイトイは面子手の一部なので、シャンテン数は必ず面子手以上になる。同じ数のままトイトイにできるなら得。七対子と迷ったら、鳴ける対子の数で決める。</div></div>'+
+    '<div style="border-top:1px solid #E5DDCA;padding:10px 0"><div style="font-size:13.5px;font-weight:700">混一色</div>'+
+    '<div style="font-size:12.5px;color:var(--vermilion)">1色＋字牌が10枚以上、かつシャンテン数が落ちない</div>'+
+    '<div style="font-size:13px;color:#33403C;line-height:1.7">混一も面子手の一部なので、シャンテンが変わらないなら乗らない理由がない。役牌の対子があれば加点。鳴いても2翻あり、鳴き手では最も打点が出る。</div></div>'+
+    '<div style="border-top:1px solid #E5DDCA;padding:10px 0"><div style="font-size:13.5px;font-weight:700">面子手</div>'+
+    '<div style="font-size:12.5px;color:var(--vermilion)">上のどれにも当てはまらないとき</div>'+
+    '<div style="font-size:13px;color:#33403C;line-height:1.7">実戦の8割はこれ。手役を意識せず、5ブロックを最短で埋める。</div></div>'+
+    '<div style="border-top:1px solid #E5DDCA;padding:10px 0"><div style="font-size:13.5px;font-weight:700;color:var(--vermilion)">やってはいけないこと</div>'+
+    '<ul class="plain"><li>— 手役を狙ってシャンテン数を落とす</li>'+
+    '<li>— 5巡目を過ぎてから方針を変える</li>'+
+    '<li>— 染め手で役牌を先に切る</li>'+
+    '<li>— 鳴いた後の役が言えないのに鳴く</li></ul></div></div>';
+  h+='<div class="card"><div class="eyebrow">押し引きの3条件</div>'+
+    '<p style="margin:8px 0 0;font-size:14px;color:#33403C;line-height:1.75">'+
+    'リーチに対して押してよいのは <b>良形・打点あり・テンパイ</b> が揃ったとき。'+
+    '1つ欠けたら要注意、2つ欠けたら降りる。親リーチには条件を1段厳しくする。'+
+    '2シャンテン以下は無条件で降りてよい。赤2枚以上を持っているときだけ、愚形でも押しに回ってよい。</p></div>';
+
+  h+='<div class="card"><div class="eyebrow">点数早見</div><div style="margin-top:8px">'+
+    POINTS.map(p=>'<div class="ptrow"><div class="a">'+p[0]+'</div><div class="b">'+p[1]+'</div></div>').join("")+
+    '</div></div>';
+
+  h+='<div class="card"><div class="eyebrow">当日のチェックリスト</div><ul class="plain">'+
+    '<li>— 開始前にルールを確認：赤の枚数・食いタン・裏ドラ・順位点。ここで打ち方が変わる。</li>'+
+    '<li>— 先制テンパイは愚形でも即リーチ。</li>'+
+    '<li>— リーチが入ったら3秒で「良形／打点／シャンテン数」を確認する。</li>'+
+    '<li>— 鳴く前に「鳴いた後の役は何か」を必ず言う。</li>'+
+    '<li>— 大きくリードしている局は、アガリより放銃回避。</li>'+
+    '<li>— 大負けの原因はほぼ全て「押すべきでない場面で押した」。迷ったら降りる。</li>'+
+    '</ul></div>';
+  return h;
+}
+
+function viewLog(){
+  if(!S.history.length)
+    return '<div class="card"><p style="margin:0;font-size:14px;color:#33403C">'+
+      'まだ記録がありません。実力診断を最後まで受けると、その日の点数がここに残ります。'+
+      '週に1回受け直すと、4週間の伸びが線で見えます。</p></div>';
+  let h='<div class="card tight"><div class="eyebrow" style="padding:4px 4px 0">スコア推移（'+Q.length+'点満点）</div>'+
+        lineSVG(S.history)+'</div>';
+  h+='<div class="card"><div class="eyebrow">分野別の推移</div><div style="overflow-x:auto;margin-top:8px">'+
+     '<table><thead><tr><th>日付</th>'+CATS.map(c=>'<th>'+c+'</th>').join("")+'<th>計</th></tr></thead><tbody>'+
+     S.history.slice().reverse().map(hh=>'<tr><td>'+hh.date+'</td>'+
+       CATS.map(c=>'<td style="color:'+(hh.byCat[c]>=70?"var(--jade)":"var(--vermilion)")+'">'+hh.byCat[c]+'</td>').join("")+
+       '<td>'+hh.total+'</td></tr>').join("")+'</tbody></table></div>'+
+     '<button class="ghost" onclick="clearLog()">記録をすべて消す</button></div>';
+  return h;
+}
+function clearLog(){
+  if(confirm("これまでの診断記録をすべて消します。よろしいですか？")){
+    S.history=[]; save(); render();
+  }
+}
+
+
+
+/* ===================== 点数計算 ===================== */
+function basePt(fu,han){
+  if(han>=13) return 8000;
+  if(han>=11) return 6000;
+  if(han>=8)  return 4000;
+  if(han>=6)  return 3000;
+  if(han>=5)  return 2000;
+  return Math.min(fu*Math.pow(2,2+han), 2000);
+}
+const c100=x=>Math.ceil(x/100)*100;
+function scoreCell(fu,han,dealer){
+  const b=basePt(fu,han), mangan=(fu*Math.pow(2,2+han))>=2000||han>=5;
+  if(dealer) return {ron:c100(b*6), tsumo:c100(b*2)+"オール", mangan:mangan};
+  return {ron:c100(b*4), tsumo:c100(b*1)+" / "+c100(b*2), mangan:mangan};
+}
+const FU_ROWS=[20,25,30,40,50,60,70];
+function scoreTable(dealer){
+  let h='<div style="overflow-x:auto"><table style="font-size:11px"><thead><tr>'+
+        '<th style="text-align:left">符</th>'+[1,2,3,4].map(n=>'<th>'+n+'翻</th>').join("")+'</tr></thead><tbody>';
+  FU_ROWS.forEach(fu=>{
+    h+='<tr><td style="text-align:left">'+fu+'</td>';
+    [1,2,3,4].forEach(han=>{
+      const na=(fu===20&&han===1)||(fu===25&&han===1);
+      if(na){ h+='<td style="color:#A79E88">—</td>'; return; }
+      const c=scoreCell(fu,han,dealer);
+      const ron = (fu===20) ? "—" : c.ron;
+      h+='<td style="line-height:1.5'+(c.mangan?';color:var(--vermilion)':'')+'">'+
+         ron+'<br><span style="color:#5A6B66">'+c.tsumo+'</span></td>';
+    });
+    h+='</tr>';
+  });
+  return h+'</tbody></table></div>';
+}
+const FU_PARTS=[
+  ["副底（そこ）","20符","すべての手の出発点"],
+  ["門前ロン","+10符","鳴いていない手をロンしたとき"],
+  ["ツモ","+2符","平和ツモと七対子には付かない"],
+  ["順子","0符","何組あっても0"],
+  ["明刻 中張 / 幺九","2符 / 4符","ポンした刻子"],
+  ["暗刻 中張 / 幺九","4符 / 8符","手の内で作った刻子。ロンで完成した刻子は明刻扱い"],
+  ["明槓 中張 / 幺九","8符 / 16符",""],
+  ["暗槓 中張 / 幺九","16符 / 32符",""],
+  ["雀頭が役牌","2符","場風・自風・三元牌。連風牌は2符か4符でルールが分かれる"],
+  ["カンチャン・ペンチャン・単騎","+2符","両面とシャンポンは0符"]
+];
+const FU_MEMO=[
+  ["平和ツモ","20符固定","ツモの+2符が付かない"],
+  ["平和ロン","30符","20符＋門前ロン10符"],
+  ["七対子","25符固定","門前ロンの10符も付かない"],
+  ["鳴いて符が20符になる手","30符扱い","いわゆる喰い平和形"]
+];
+const LIMITS=[
+  ["満貫","5翻","子8000 / 親12000","ツモ 2000-4000 / 4000オール"],
+  ["跳満","6〜7翻","子12000 / 親18000","ツモ 3000-6000 / 6000オール"],
+  ["倍満","8〜10翻","子16000 / 親24000","ツモ 4000-8000 / 8000オール"],
+  ["三倍満","11〜12翻","子24000 / 親36000","ツモ 6000-12000 / 12000オール"],
+  ["役満","13翻〜","子32000 / 親48000","ツモ 8000-16000 / 16000オール"]
+];
+const COMMON=[
+  ["リーチのみ","30符1翻","子1000 / 親1500"],
+  ["リーチ・ツモ・平和・ドラ1","20符4翻","1300 / 2600"],
+  ["リーチ・平和・ドラ1（ロン）","30符3翻","子3900 / 親5800"],
+  ["リーチ・ツモ・ドラ1","30符3翻","1000 / 2000"],
+  ["役牌のみ（ポン）","30〜40符1翻","子1000〜1300"],
+  ["タンヤオ・ドラ2（鳴き）","30符3翻","子3900"],
+  ["七対子・ドラ1","25符3翻","子3200 / 親4800"],
+  ["リーチ・一発・ツモ・平和・ドラ1","満貫","2000 / 4000"]
+];
+
+function viewScore(){
+  let h='<div class="card"><div class="eyebrow">計算の手順</div><ol class="steps">'+
+    '<li><b>翻を数える</b> — 役の翻数＋ドラ（赤含む）。5翻以上ならここで終わり、符は不要。</li>'+
+    '<li><b>符を数える</b> — 副底20符から始めて、下の表を足していく。</li>'+
+    '<li><b>1の位を切り上げる</b> — 32符なら40符、42符なら50符。</li>'+
+    '<li><b>早見表を引く</b> — 符と翻の交点。慣れるまでは暗記より表で十分。</li>'+
+    '</ol></div>';
+
+  h+='<div class="card"><div class="eyebrow">符の内訳</div><div style="margin-top:8px">'+
+    FU_PARTS.map(f=>'<div style="display:flex;gap:8px;border-bottom:1px solid #E5DDCA;padding:7px 0;font-size:13px">'+
+      '<span style="flex:1;color:var(--ink)">'+f[0]+'</span>'+
+      '<span style="font-family:var(--mono);color:var(--vermilion);white-space:nowrap">'+f[1]+'</span></div>'+
+      (f[2]?'<div style="font-size:11.5px;color:#5A6B66;margin:-4px 0 0;line-height:1.6">'+f[2]+'</div>':'')).join("")+
+    '</div></div>';
+
+  h+='<div class="card"><div class="eyebrow">符が固定される形</div><div style="margin-top:8px">'+
+    FU_MEMO.map(f=>'<div style="border-bottom:1px solid #E5DDCA;padding:7px 0">'+
+      '<div style="display:flex;gap:8px;font-size:13px"><span style="flex:1;font-weight:700">'+f[0]+'</span>'+
+      '<span style="font-family:var(--mono);color:var(--vermilion)">'+f[1]+'</span></div>'+
+      '<div style="font-size:11.5px;color:#5A6B66;line-height:1.6">'+f[2]+'</div></div>').join("")+
+    '</div></div>';
+
+  h+='<div class="card"><div class="eyebrow">子の点数（上＝ロン／下＝ツモ 子-親）</div>'+
+    '<div style="margin-top:8px">'+scoreTable(false)+'</div>'+
+    '<div style="font-size:11.5px;color:#5A6B66;margin-top:8px;line-height:1.6">'+
+    '赤字は満貫（8000）に到達している欄。20符はツモのみ（平和ツモ）で、ロンは成立しない。</div></div>';
+
+  h+='<div class="card"><div class="eyebrow">親の点数（上＝ロン／下＝ツモ オール）</div>'+
+    '<div style="margin-top:8px">'+scoreTable(true)+'</div>'+
+    '<div style="font-size:11.5px;color:#5A6B66;margin-top:8px;line-height:1.6">'+
+    '赤字は満貫（12000）に到達している欄。</div></div>';
+
+  h+='<div class="card"><div class="eyebrow">満貫以上</div><div style="margin-top:8px">'+
+    LIMITS.map(l=>'<div style="border-bottom:1px solid #E5DDCA;padding:8px 0">'+
+      '<div style="display:flex;gap:8px;font-size:13.5px"><span style="font-weight:700;width:52px">'+l[0]+'</span>'+
+      '<span style="color:var(--brass);font-family:var(--mono)">'+l[1]+'</span></div>'+
+      '<div style="font-family:var(--mono);font-size:11.5px;color:#33403C;line-height:1.7">'+l[2]+'<br>'+l[3]+'</div>'+
+      '</div>').join("")+'</div></div>';
+
+  h+='<div class="card"><div class="eyebrow">頻出パターン（これだけ覚えれば足りる）</div><div style="margin-top:8px">'+
+    COMMON.map(c=>'<div style="border-bottom:1px solid #E5DDCA;padding:7px 0">'+
+      '<div style="font-size:13px;font-weight:700">'+c[0]+'</div>'+
+      '<div style="font-family:var(--mono);font-size:11.5px;color:#5A6B66">'+c[1]+'　→　'+c[2]+'</div>'+
+      '</div>').join("")+'</div></div>';
+
+  h+='<div class="card"><div class="eyebrow">つまずきやすい点</div><ul class="plain">'+
+    '<li>— ロンで完成した刻子は<b>明刻扱い</b>（2符）。暗刻（4符）にはならない。</li>'+
+    '<li>— 待ちの符は<b>実際にアガった解釈</b>で数える。複数の解釈があるなら符が高いほうを選べる。</li>'+
+    '<li>— 4翻40符（子10240点）以上は満貫止まり。それ以上は跳満まで上がらない。</li>'+
+    '<li>— <b>切り上げ満貫</b>を採用するルールでは、4翻30符（7700）と3翻60符が満貫8000になる。開始前に確認する。</li>'+
+    '<li>— 符計算が面倒なら、<b>30符と40符だけ</b>覚えておけば実戦の8割は足りる。</li>'+
+    '</ul></div>';
+  return h;
+}
+
+/* ===================== 無限ドリル ===================== */
+const GMODES=[["wait","待ち読み"],["count","残り枚数"],["eff","1シャンテン"],["plan","方針"],["def","守備"]];
+const GHINT={
+  wait:"ランダムに作ったテンパイ手の待ちを当てます。答えはプログラムが計算しているので、何度でも新しい形が出ます。",
+  eff:"1シャンテンの手だけを出題します。受け入れの比較と、シャンテン戻しを避ける判断の2種類。実力差が最も出るのがこの局面です。",
+  plan:"配牌〜序盤の13枚から、どのルートを目指すかを選びます。面子手・七対子・トイトイ・国士・混一のシャンテン数をそれぞれ計算して比較しています。",
+  count:"見えている牌から、アガリ牌が山に何枚残っているかを数えます。テンパイの形ではなく残り枚数で判断する練習。",
+  def:"ランダムな河に対して最も安全な牌を選びます。現物は選択肢から外してあるので、スジ・壁・字牌の切れ枚数の比較になります。"
+};
+function newGQ(){
+  S.gq = S.gmode==="wait" ? genWait() : S.gmode==="count" ? genCount()
+       : S.gmode==="eff" ? genEff() : S.gmode==="plan" ? genPlan() : genDef();
+  S.gpicked=null;
+}
+function setGMode(m){ S.gmode=m; S.gn=0; S.gok=0; newGQ(); render(); }
+function gpick(n){ if(S.gpicked===null){ S.gpicked=n; S.gn++; if(n===S.gq.answer) S.gok++; render(); } }
+function gnext(){ newGQ(); render(); window.scrollTo({top:0,behavior:"instant"}); }
+
+function viewGen(){
+  if(!S.gq) newGQ();
+  const q=S.gq;
+  let h='<nav style="margin:0 0 16px">'+GMODES.map(m=>
+    '<button class="'+(S.gmode===m[0]?"on":"")+'" onclick="setGMode(\''+m[0]+'\')" '+
+    'style="'+(S.gmode===m[0]?"background:var(--brass);color:var(--feltDeep);border-color:var(--brass)":"")+
+    ';font-size:12.5px;padding:5px 10px">'+m[1]+'</button>').join("")+'</nav>';
+  h+='<div class="note">'+GHINT[S.gmode]+
+     '<div style="margin-top:8px;color:#8FA9A3">このセッション：'+S.gok+' / '+S.gn+' 正解</div></div>';
+  if(!q) return h+'<div class="card"><p style="margin:0">問題を作れませんでした。もう一度お試しください。</p>'+
+    '<button class="next" onclick="gnext()">作り直す</button></div>';
+  h+='<div class="card">'+
+     riverHTML(q.river)+
+     handHTML(q.hand, q.handLabel || (q.river||q.seenTiles?"自分の手牌":""))+
+     (q.seenTiles ? handHTML(q.seenTiles, q.seenLabel) : "")+
+     '<p class="q">'+q.q+'</p>'+
+     '<div class="choices">'+q.choices.map(function(c,n){
+       let cls="";
+       if(S.gpicked!==null){ if(n===q.answer) cls="right"; else if(n===S.gpicked) cls="wrong"; else cls="mute"; }
+       return '<button class="'+cls+'" onclick="gpick('+n+')"><span class="idx">'+(n+1)+'</span>'+c+'</button>';
+     }).join("")+'</div>';
+  if(S.gpicked!==null){
+    const ok=S.gpicked===q.answer;
+    h+='<div class="verdict"><div class="head" style="color:'+(ok?"var(--jade)":"var(--vermilion)")+'">'+
+       (ok?"正解":"不正解 — 正解は "+(q.answer+1)+". "+q.choices[q.answer])+'</div>'+
+       '<p>'+q.why+'</p><button class="next" onclick="gnext()">次の問題</button></div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+/* ===================== shell ===================== */
+const TABS=[["diagnose","実力診断"],["drill","弱点ドリル"],["gen","無限ドリル"],["plan","4週間プラン"],["sheet","早見表"],["score","点数計算"],["log","記録"]];
+function setTab(t){ S.tab=t; render(); window.scrollTo({top:0,behavior:"instant"}); }
+
+function render(){
+  document.getElementById("qcount").textContent = Q.length;
+  document.getElementById("nav").innerHTML = TABS.map(t=>
+    '<button class="'+(S.tab===t[0]?"on":"")+'" onclick="setTab(\''+t[0]+'\')">'+t[1]+'</button>').join("");
+  const v = S.tab==="diagnose" ? viewDiagnose()
+          : S.tab==="drill"    ? viewDrill()
+          : S.tab==="gen"      ? viewGen()
+          : S.tab==="plan"     ? viewPlan()
+          : S.tab==="sheet"    ? viewSheet()
+          : S.tab==="score"    ? viewScore()
+          :                      viewLog();
+  document.getElementById("app").innerHTML = v;
+}
+render();
+
+/* ===================== PWA ===================== */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(){});
+  });
+}
+</script>
+</body>
+</html>

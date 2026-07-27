@@ -233,8 +233,7 @@
   <div id="overBody"></div>
   <button onclick="startHand()" style="width:100%;margin-top:14px;padding:12px;border-radius:4px;border:0;background:var(--vermilion);color:#fff;font-family:inherit;font-size:15px;font-weight:600">次の局へ</button>
 </div></div>
-<script>
-/* 麻雀 役判定・符計算・点数計算 */
+<script>/* 麻雀 役判定・符計算・点数計算 */
 const TN = (() => { const a = []; "mps".split("").forEach(x => { for (let n = 1; n <= 9; n++) a.push(n + x); });
   ["東","南","西","北","白","發","中"].forEach(z => a.push(z)); return a; })();
 const idxOf = t => TN.indexOf(t);
@@ -517,7 +516,7 @@ function finalize(yakuList, _x, fu, ctx, isYakuman) {
   return { yaku: disp, han: han, fu: fu, yakuman: 0, dealer: dealer, tsumo: ctx.tsumo, ...p };
 }
 
-/* ===== 対局コア ===== */
+/* ===== 対局コア（UI非依存） ===== */
 const R = n => Math.floor(Math.random() * n);
 
 /* --- シャンテン（index.htmlと同じ高速版） --- */
@@ -950,37 +949,63 @@ function coachCheck(i) {
   const opts = discardOpts(c, nm), best = opts[0];
   const chosen = opts.find(o => o.tile === P.hand[i].t);
   if (!chosen) return null;
-  const notes = [];
-  if (chosen.shanten > best.shanten)
-    notes.push({ sev: 2, t: "シャンテン戻し", d: "打" + TN[chosen.tile] + "だと" + chosen.shanten +
-      "シャンテンに戻ります。打" + TN[best.tile] + "なら" + best.shanten + "シャンテンのまま、受け入れ" +
-      best.kinds.length + "種" + best.total + "枚です。" });
-  else if (best.total - chosen.total > 0)
-    notes.push({ sev: best.total - chosen.total >= 8 ? 2 : 1, t: "受け入れが狭い",
-      d: "打" + TN[chosen.tile] + "は" + chosen.kinds.length + "種" + chosen.total + "枚。打" + TN[best.tile] +
-         "なら" + best.kinds.length + "種" + best.total + "枚で、" + (best.total - chosen.total) + "枚広いです。" });
+  const myS = shantenN(c, nm);
+  const tn = TN[P.hand[i].t];
   const threats = G.P.map((q, k) => (k !== 0 && q.riichi) ? k : -1).filter(k => k >= 0);
+  const notes = [];
+  const effNotes = () => {
+    if (chosen.shanten > best.shanten)
+      notes.push({ sev: 2, t: "シャンテン戻し", d: "打" + tn + "だと" + chosen.shanten +
+        "シャンテンに戻ります。打" + TN[best.tile] + "なら" + best.shanten + "シャンテンのまま、受け入れ" +
+        best.kinds.length + "種" + best.total + "枚です。" });
+    else if (best.total - chosen.total > 0)
+      notes.push({ sev: best.total - chosen.total >= 8 ? 2 : 1, t: "受け入れが狭い",
+        d: "打" + tn + "は" + chosen.kinds.length + "種" + chosen.total + "枚。打" + TN[best.tile] +
+           "なら" + best.kinds.length + "種" + best.total + "枚で、" + (best.total - chosen.total) + "枚広いです。" });
+  };
+
   if (threats.length) {
     const sa = seenArr(G);
-    const dg = t => { let m = { s: -1 }; threats.forEach(k => { const d = dangerOf(t, sa, riverSetOf(G.P[k]));
-      if (d.s > m.s) m = d; }); return m; };
+    const dg = t => { let m = { s: -1, label: "" };
+      threats.forEach(k => { const d = dangerOf(t, sa, riverSetOf(G.P[k])); if (d.s > m.s) m = d; }); return m; };
     const mine = dg(P.hand[i].t);
     let safest = { s: 1e9 }, safeTile = -1;
     P.hand.forEach(x => { const d = dg(x.t); if (d.s < safest.s) { safest = d; safeTile = x.t; } });
-    const myS = shantenN(c, nm);
-    if (mine.s > 0 && myS >= 2 && safest.s < mine.s - 0.5)
-      notes.push({ sev: 2, t: "降りたほうが得", d: "リーチが入っていて自分は" + myS +
-        "シャンテンです。" + TN[P.hand[i].t] + "は" + mine.label + "。" + TN[safeTile] + "（" + safest.label +
-        "）が手の中にあります。2シャンテン以下は降りるのが基本です。" });
-    else if (mine.s > 0 && myS === 1 && mine.label === "無筋" && safest.s < 1)
-      notes.push({ sev: 1, t: "押すか降りるか", d: "1シャンテンで無筋を切ります。" + TN[safeTile] +
-        "（" + safest.label + "）で回る手もあります。良形か打点があるなら押して構いません。" });
+
+    if (myS >= 2) {
+      /* 降りるべき局面。効率の指摘はしない */
+      if (mine.s > safest.s + 0.5)
+        notes.push({ sev: 2, t: "降りたほうが得",
+          d: "リーチが入っていて自分は" + myS + "シャンテンです。" + tn + "は" + mine.label + "。" +
+             TN[safeTile] + "（" + safest.label + "）が手の中にあります。2シャンテン以下は、" +
+             "アガれる確率よりも放銃で失う点数のほうが大きいので、降りるのが基本です。" });
+      return pick(notes);
+    }
+    /* テンパイ〜1シャンテン：押し引きの検討 */
+    if (myS === 1 && mine.s > safest.s + 1.5)
+      notes.push({ sev: 1, t: "押すか降りるか",
+        d: "1シャンテンで" + tn + "（" + mine.label + "）を切ります。" + TN[safeTile] + "（" + safest.label +
+           "）で回る手もあります。良形か打点があるなら押して構いません。" });
+    /* 推奨牌が今より危険なら、効率だけを理由に勧めない */
+    const bd = dg(best.tile);
+    if (bd.s <= mine.s + 0.5) effNotes();
+    else if (best.total - chosen.total >= 8)
+      notes.push({ sev: 1, t: "受け入れと安全度のトレードオフ",
+        d: "受け入れだけなら打" + TN[best.tile] + "が" + best.total + "枚で" + (best.total - chosen.total) +
+           "枚広いですが、そちらは" + bd.label + "で" + tn + "（" + mine.label + "）より危険です。" +
+           "打点と形を見て決めてください。" });
+    return pick(notes);
   }
-  if (!notes.length) return null;
-  const worst = Math.max.apply(null, notes.map(n => n.sev));
-  if (COACH === "after") { LOG.push("[検討] " + notes.map(n => n.t).join("・")); return null; }
-  if (COACH === "loose" && worst < 2) return null;
-  return notes;
+  effNotes();
+  return pick(notes);
+
+  function pick(ns) {
+    if (!ns.length) return null;
+    const worst = Math.max.apply(null, ns.map(n => n.sev));
+    if (COACH === "after") { LOG.push("[検討] " + ns.map(n => n.t).join("・")); return null; }
+    if (COACH === "loose" && worst < 2) return null;
+    return ns;
+  }
 }
 function showCoach(notes) {
   $("coachBody").innerHTML = notes.map(n => '<div class="cn"><b>' + n.t + '</b><p>' + n.d + '</p></div>').join("");

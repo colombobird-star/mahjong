@@ -139,7 +139,7 @@
   }
 
   body{padding:0}
-  .wrap{max-width:680px;margin:0 auto;padding:10px 10px 90px}
+  .wrap{max-width:680px;margin:0 auto;padding:10px 12px 100px}
   #bar{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#9DB5AF;
        padding:6px 4px;border-bottom:1px solid var(--feltLine);margin-bottom:8px;gap:6px;flex-wrap:wrap}
   .opp{background:rgba(0,0,0,.16);border:1px solid var(--feltLine);border-radius:4px;padding:7px 8px;margin-bottom:6px}
@@ -149,16 +149,16 @@
   .ri{background:var(--vermilion);color:#fff;border-radius:2px;padding:0 5px;font-size:10.5px}
   .tn{background:var(--brass);color:var(--feltDeep);border-radius:2px;padding:0 5px;font-size:10.5px}
   .fr{background:#5A6B66;color:#fff;border-radius:2px;padding:0 5px;font-size:10.5px}
-  .rv{display:flex;flex-wrap:wrap;gap:1px;margin-top:5px;min-height:20px}
+  .rv{display:grid;grid-template-columns:repeat(6,auto);justify-content:start;gap:2px;margin-top:6px;min-height:33px}
   .mr{display:flex;gap:6px;margin-top:5px}
   .md{display:flex;gap:1px;outline:1px solid var(--brass);border-radius:2px}
   .tl{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
       background:var(--ivory);border-bottom:3px solid var(--ivoryEdge);border-radius:2px;
-      width:30px;height:42px;line-height:1;flex:0 0 auto;box-shadow:0 1px 2px rgba(0,0,0,.3)}
-  .tl b{font-size:16px;font-weight:700}.tl i{font-size:9px;font-style:normal}
-  .tl .z{font-size:18px}
-  .tl.sm{width:18px;height:25px;border-bottom-width:2px}
-  .tl.sm b{font-size:10px}.tl.sm i{font-size:6px}.tl.sm .z{font-size:11px}
+      width:34px;height:48px;line-height:1;flex:0 0 auto;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+  .tl b{font-size:18px;font-weight:700}.tl i{font-size:10px;font-style:normal}
+  .tl .z{font-size:21px}
+  .tl.sm{width:23px;height:31px;border-bottom-width:2px}
+  .tl.sm b{font-size:12px}.tl.sm i{font-size:7px}.tl.sm .z{font-size:14px}
   .tl.red{background:#FBEDE7;border-bottom-color:#E0B3A8}
   .tl.gy{opacity:.35}.tl.rc{outline:2px solid var(--vermilion)}
   .tl.sel{outline:2px solid var(--jade)}.tl.dim{opacity:.4}
@@ -166,9 +166,11 @@
   .redc{color:var(--vermilion)}.grn{color:var(--green)}
   .me{margin-top:10px;border-top:1px solid var(--feltLine);padding-top:8px}
   #myinfo{display:flex;align-items:center;gap:7px;font-size:12px;color:#BFD3CD;flex-wrap:wrap}
-  #myriver{display:flex;flex-wrap:wrap;gap:1px;margin:6px 0;min-height:25px}
+  #myriver{display:grid;grid-template-columns:repeat(6,auto);justify-content:start;gap:2px;margin:7px 0;min-height:33px}
   #mymeld{display:flex;gap:6px;margin-bottom:4px}
-  #hand{display:flex;flex-wrap:wrap;gap:2px;margin-top:8px}
+  #hand{display:flex;flex-wrap:wrap;gap:3px;margin-top:12px;padding:0 2px}
+  .tw{display:inline-block;padding:5px 2px;margin:-5px 0}
+  .tl.drawn{margin-left:12px;outline:1px solid var(--brass)}
   #btns{position:fixed;left:0;right:0;bottom:0;display:flex;gap:6px;justify-content:center;
         padding:9px 10px calc(9px + env(safe-area-inset-bottom));background:rgba(12,37,35,.96);
         border-top:1px solid var(--feltLine);flex-wrap:wrap}
@@ -616,7 +618,7 @@ const WIND = [27, 28, 29, 30];
 
 function newGame(seed) {
   const wall = buildWall();
-  const G = { wall, pos: 0, dead: wall.slice(122), live: 70, kyoku: 1, honba: 0, sticks: 0,
+  const G = { wall, pos: 0, dead: wall.slice(122), live: 70, kyoku: 1, honba: 0, sticks: 0, seq: 0,
     doraInd: [wall[122].t], uraInd: [wall[123].t], turn: 0, last: null, over: false, result: null, log: [] };
   G.P = [0,1,2,3].map(i => ({ seat: i, hand: [], melds: [], river: [], score: 25000,
     riichi: false, riichiIdx: -1, ippatsu: false, menzen: true, furiten: false, temp: false, ai: i !== 0 }));
@@ -636,6 +638,17 @@ const seenArr = G => { const s = new Array(34).fill(0);
   G.P.forEach(p => { p.river.forEach(r => { if (!r.called) s[r.t]++; }); p.melds.forEach(m => m.tiles.forEach(x => s[x.t]++)); });
   G.doraInd.forEach(d => s[d]++); return s; };
 const riverSetOf = p => { const o = {}; p.river.forEach(r => o[r.t] = 1); return o; };
+/* k に対する現物：k自身の河 ＋ kのリーチ後に誰かが切って通った牌 */
+const safeSetOf = (G, k) => {
+  const o = {}, K = G.P[k];
+  K.river.forEach(r => o[r.t] = 1);
+  if (K.riichi) {
+    const rs = K.river[K.riichiIdx] ? K.river[K.riichiIdx].seq : -1;
+    G.P.forEach((q, i) => { if (i === k) return;
+      q.river.forEach(r => { if (r.seq > rs) o[r.t] = 1; }); });
+  }
+  return o;
+};
 
 function ctxFor(G, p, winTile, tsumo, extra) {
   const P = G.P[p];
@@ -662,7 +675,8 @@ function updFuriten(G, p) {
 /* ---- 打牌 ---- */
 function discard(G, p, handIdx) {
   const P = G.P[p], tile = P.hand.splice(handIdx, 1)[0];
-  P.river.push({ t: tile.t, red: tile.red, riichi: P.riichiIdx === P.river.length && P.riichi });
+  P.river.push({ t: tile.t, red: tile.red, seq: G.seq++,
+    riichi: P.riichiIdx === P.river.length && P.riichi });
   G.P.forEach((q, i) => { if (i !== p) q.ippatsu = false; });
   P.ippatsu = false;
   G.last = { t: tile.t, red: tile.red, from: p };
@@ -745,7 +759,7 @@ function cpuTurn(G, p) {
   /* 押し引き */
   if (threats.length) {
     const sa = seenArr(G);
-    const danger = t => Math.max.apply(null, threats.map(i => dangerOf(t, sa, riverSetOf(G.P[i])).s));
+    const danger = t => Math.max.apply(null, threats.map(i => dangerOf(t, sa, safeSetOf(G, i)).s));
     if (myS >= 2) {
       let bi = 0, bd = 1e9;
       P.hand.forEach((x, i) => { const d = danger(x.t); if (d < bd) { bd = d; bi = i; } });
@@ -819,10 +833,12 @@ function render() {
   $("myriver").innerHTML = smallRiver(me);
   $("mymeld").innerHTML = me.melds.length ? meldHTML(me.melds) : "";
   const canTap = WAIT && WAIT.kind === "discard";
+  const lastIdx = me.hand.length - 1;
   $("hand").innerHTML = me.hand.map((x, i) => {
     let cls = "";
     if (canTap && WAIT.riichiMode) cls = WAIT.allowed.indexOf(i) >= 0 ? "sel" : "dim";
-    return '<span onclick="tapTile(' + i + ')">' + tileHTML(x.t, x.red, cls) + '</span>';
+    if (WAIT && WAIT.fresh && i === lastIdx) cls += " drawn";
+    return '<span class="tw" onclick="tapTile(' + i + ')">' + tileHTML(x.t, x.red, cls) + '</span>';
   }).join("");
   renderBtns();
 }
@@ -860,12 +876,12 @@ function step() {
   const drawn = P.hand[P.hand.length - 1];
   const win = shantenN(counts(P.hand), P.melds.length) === -1;
   if (p === 0) {
-    sortHand(P);
+    const dt = P.hand.pop(); sortHand(P); P.hand.push(dt);
     let res = null;
     if (win) res = scoreWin(G, 0, drawn.t, true, { haitei: G.live === 0 });
     const opts = discardOpts(counts(P.hand), P.melds.length);
     const canRiichi = P.menzen && !P.riichi && P.score >= 1000 && G.live >= 4 && opts.some(o => o.shanten === 0);
-    WAIT = { kind: "discard", tsumo: !!res, tsumoRes: res, drawn: drawn.t, canRiichi, riichiMode: false };
+    WAIT = { kind: "discard", tsumo: !!res, tsumoRes: res, drawn: drawn.t, canRiichi, riichiMode: false, fresh: true };
     render(); return;
   }
   if (win) { const r = scoreWin(G, p, drawn.t, true, { haitei: G.live === 0 });
@@ -921,7 +937,8 @@ function act(a, i) {
 }
 function afterOwnMeld() {
   const P = G.P[0];
-  WAIT = { kind: "discard", tsumo: false, canRiichi: false, riichiMode: false };
+  sortHand(P);
+  WAIT = { kind: "discard", tsumo: false, canRiichi: false, riichiMode: false, fresh: false };
   render();
 }
 function tapTile(i) {
@@ -967,7 +984,7 @@ function coachCheck(i) {
   if (threats.length) {
     const sa = seenArr(G);
     const dg = t => { let m = { s: -1, label: "" };
-      threats.forEach(k => { const d = dangerOf(t, sa, riverSetOf(G.P[k])); if (d.s > m.s) m = d; }); return m; };
+      threats.forEach(k => { const d = dangerOf(t, sa, safeSetOf(G, k)); if (d.s > m.s) m = d; }); return m; };
     const mine = dg(P.hand[i].t);
     let safest = { s: 1e9 }, safeTile = -1;
     P.hand.forEach(x => { const d = dg(x.t); if (d.s < safest.s) { safest = d; safeTile = x.t; } });

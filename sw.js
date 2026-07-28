@@ -1,13 +1,13 @@
-/* 麻雀ドリル — オフライン用サービスワーカー
-   ファイルを更新したら CACHE の v1 を v2, v3 … と上げてください。
-   そうしないと端末に残った古い版が表示され続けます。 */
-const CACHE = "mahjong-drill-v12";
+/* 麻雀ドリル／対局 — サービスワーカー
+   ネットワーク優先。オンラインなら常に最新、オフラインならキャッシュを返す。
+   ファイルを更新してもバージョンを上げる必要はない。 */
+const CACHE = "mahjong-net-v1";
 const ASSETS = ["./", "./index.html", "./game.html", "./manifest.json", "./icon.svg"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(
     caches.open(CACHE)
-      .then(function (c) { return c.addAll(ASSETS); })
+      .then(function (c) { return c.addAll(ASSETS).catch(function () {}); })
       .then(function () { return self.skipWaiting(); })
   );
 });
@@ -16,9 +16,7 @@ self.addEventListener("activate", function (e) {
   e.waitUntil(
     caches.keys()
       .then(function (keys) {
-        return Promise.all(keys.map(function (k) {
-          return k === CACHE ? null : caches.delete(k);
-        }));
+        return Promise.all(keys.map(function (k) { return k === CACHE ? null : caches.delete(k); }));
       })
       .then(function () { return self.clients.claim(); })
   );
@@ -27,15 +25,18 @@ self.addEventListener("activate", function (e) {
 self.addEventListener("fetch", function (e) {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    caches.match(e.request).then(function (hit) {
-      if (hit) return hit;
-      return fetch(e.request).then(function (res) {
-        var copy = res.clone();
-        caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+    fetch(e.request)
+      .then(function (res) {
+        if (res && res.status === 200 && res.type === "basic") {
+          const copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+        }
         return res;
-      }).catch(function () {
-        return caches.match("./index.html");
-      });
-    })
+      })
+      .catch(function () {
+        return caches.match(e.request).then(function (hit) {
+          return hit || caches.match("./index.html");
+        });
+      })
   );
 });
